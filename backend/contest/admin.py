@@ -24,7 +24,6 @@ class ContestAdmin(admin.ModelAdmin):
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
     inlines = [TestCaseInline]
-    pass
 
 
 @admin.register(TestCase)

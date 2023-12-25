@@ -20,6 +20,9 @@ class Contest(models.Model):
         to=User, related_name="enrolled_contests", blank=True
     )  # Get User from email CSV and set enrolled_users
 
+    def __str__(self) -> str:
+        return f"{self.title} ({self.organizer.username})"
+
 
 class Question(models.Model):
     contest = models.ForeignKey(
@@ -32,12 +35,18 @@ class Question(models.Model):
     description = models.TextField(blank=True)
     duration = models.DurationField(default=timedelta(minutes=10))
 
+    def __str__(self) -> str:
+        return f"{self.title} ({self.contest})"
+
 
 class TestCase(models.Model):
     question = models.ForeignKey(
         to=Question, on_delete=models.CASCADE, related_name="testcases"
     )
     output = models.CharField(max_length=500)
+
+    def __str__(self) -> str:
+        return f"{self.id} -> {self.question}"
 
 
 class Submission(models.Model):
@@ -53,3 +62,6 @@ class Submission(models.Model):
     duration = models.DurationField()
     attempt = models.PositiveSmallIntegerField()
     code = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.user} ({self.question})"
