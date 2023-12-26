@@ -19,7 +19,5 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = (
-            "id",
-            "username",
-        )
+        extra_kwargs = {"password": {"write_only": True}}
+        exclude = ("groups", "user_permissions")

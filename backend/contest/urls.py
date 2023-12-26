@@ -1,7 +1,9 @@
 from django.urls import path
+from rest_framework.routers import DefaultRouter
 
-from .views import ContestAPI
+from .views import ContestViewSet
 
-urlpatterns = [
-    path("contests", ContestAPI.as_view()),
-]
+route = DefaultRouter()
+route.register(r"contests", ContestViewSet, "contest")
+urlpatterns = route.urls
+urlpatterns += []

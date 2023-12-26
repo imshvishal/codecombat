@@ -62,6 +62,7 @@ class Submission(models.Model):
     duration = models.DurationField()
     attempt = models.PositiveSmallIntegerField()
     code = models.TextField(blank=True)
+    success = models.BooleanField(default=True)
 
     def __str__(self) -> str:
         return f"{self.user} ({self.question})"
