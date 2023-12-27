@@ -19,6 +19,7 @@ class Contest(models.Model):
     enrolled_users = models.ManyToManyField(
         to=User, related_name="enrolled_contests", blank=True
     )  # Get User from email CSV and set enrolled_users
+    is_private = models.BooleanField(default=True)
 
     def __str__(self) -> str:
         return f"{self.title} ({self.organizer.username})"

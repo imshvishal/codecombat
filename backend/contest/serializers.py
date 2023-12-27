@@ -10,27 +10,33 @@ from accounts.serializers import UserSerializer
 from .models import Contest, Question, Submission, TestCase
 
 
-class ContestSerializer(ModelSerializer):
+class ContestCreateSerializer(ModelSerializer):
     questions = SerializerMethodField()
 
     class Meta:
         model = Contest
         fields = "__all__"
-        # depth = 1
 
     def get_questions(self, contest):
-        return contest.questions.all().count()
+        questions = contest.questions.all()
+        serializer = QuestionSerializer(questions, many=True)
+        return serializer.data
+
+
+class ContestSerializer(ContestCreateSerializer):
+    organizer = UserSerializer()
 
 
 class QuestionSerializer(ModelSerializer):
-    testcases = SerializerMethodField()
+    testcases = serializers.SerializerMethodField()
 
     class Meta:
         model = Question
         fields = "__all__"
 
     def get_testcases(self, question):
-        return question.testcases.all().count()
+        testcases = question.testcases.all().count()
+        return testcases
 
 
 class TestCaseSerializer(ModelSerializer):

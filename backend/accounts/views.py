@@ -1,4 +1,5 @@
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -6,12 +7,17 @@ from rest_framework.viewsets import ModelViewSet
 from contest.serializers import ContestSerializer, SubmissionSerializer
 
 from .models import User
+from .permissions import IsSameUser
 from .serializers import UserSerializer
 
 
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
+    permission_classes = [IsSameUser]
+
+    def list(self, request: Request, *args, **kwargs):
+        raise PermissionDenied(method=request.method)
 
     @action(["GET"], True)
     def enrolled_contests(self, request: Request, pk):

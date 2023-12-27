@@ -34,6 +34,3 @@ class TestCaseAdmin(admin.ModelAdmin):
 @admin.register(Submission)
 class SubmissionAdmin(admin.ModelAdmin):
     pass
-
-
-# TODO: Fix Inlines
