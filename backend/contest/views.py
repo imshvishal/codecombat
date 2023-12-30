@@ -33,6 +33,15 @@ class CustomModelViewSet(ModelViewSet):
     def list(self, request, *args, **kwargs):
         raise PermissionDenied()
 
+    def perform_create_or_update(self, serializer):
+        serializer.save()
+
+    def perform_create(self, serializer):
+        self.perform_create_or_update(serializer)
+
+    def perform_update(self, serializer):
+        self.perform_create_or_update(serializer)
+
 
 # Create your views here.
 class ContestViewSet(CustomModelViewSet):
@@ -40,7 +49,7 @@ class ContestViewSet(CustomModelViewSet):
     queryset = Contest.objects.all()
     permission_classes = [ContestPermission]
 
-    def perform_create(self, serializer):
+    def perform_create_or_update(self, serializer):
         contest = serializer.save()
         questions = self.request.data.get("questions", [])
         for question_data in questions:
@@ -56,10 +65,6 @@ class ContestViewSet(CustomModelViewSet):
                 )
                 testcase_serializer.is_valid(raise_exception=True)
                 testcase_serializer.save()
-
-    def perform_update(self, serializer):
-        # TODO: Implement contest update
-        return super().perform_update(serializer)
 
     @action(["get"], detail=True)
     def users(self, request: Request, pk):
@@ -101,7 +106,8 @@ class QuestionViewSet(CustomModelViewSet):
     queryset = Question.objects.all()
     permission_classes = [QuestionPermission]
 
-    def perform_create(self, serializer):
+    def perform_create_or_update(self, serializer):
+        """There is no special endpoints for TestCases.. all the testcases will be handled with the help of this method only"""
         question = serializer.save()
         for testcase_data in self.request.data.get("testcases", []):
             testcase_serializer = TestCaseSerializer(
@@ -109,10 +115,6 @@ class QuestionViewSet(CustomModelViewSet):
             )
             testcase_serializer.is_valid(raise_exception=True)
             testcase_serializer.save()
-
-    def perform_update(self, serializer):
-        # TODO: Add method to update questions with test cases..
-        return super().perform_update(serializer)
 
     @action(["get"], detail=True)
     def submissions(self, request: Request, pk):
@@ -131,4 +133,4 @@ class SubmissionViewSet(CustomModelViewSet):
 
     def create(self, request, *args, **kwargs):
         # TODO: Implement the code to interpret or compile the submitted code and return response
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)

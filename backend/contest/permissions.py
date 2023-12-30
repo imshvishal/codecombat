@@ -45,9 +45,3 @@ class QuestionPermission(DataForValidContestPermission):
 class SubmissionPermission(DataForValidContestPermission):
     def has_object_permission(self, request: Request, view, obj):
         return False
-
-
-"""
-contests/ -> GET, POST, HEAD, OPTIONS
-contests/1 -> GET, PATCH, PUT, DELETE
-"""
