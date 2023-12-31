@@ -2,3 +2,4 @@ django
 djangorestframwork
 #jwt
 docker
+cloudinary

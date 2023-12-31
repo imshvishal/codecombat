@@ -12,6 +12,7 @@ class Contest(models.Model):
     )
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True)
+    cover_image = models.ImageField(null=True, blank=True, upload_to="contest_cover")
     allow_auto_complete = models.BooleanField(default=True)
     start_time = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)

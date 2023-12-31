@@ -1,3 +1,4 @@
+from django.core.signals import request_started
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
@@ -17,7 +18,7 @@ class UserViewSet(ModelViewSet):
     permission_classes = [IsSameUser]
 
     def list(self, request: Request, *args, **kwargs):
-        raise PermissionDenied(method=request.method)
+        raise PermissionDenied()
 
     @action(["GET"], True)
     def enrolled_contests(self, request: Request, pk):
