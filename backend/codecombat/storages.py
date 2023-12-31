@@ -40,6 +40,9 @@ class CloudinaryFileStorage(Storage):
         options = {
             "resource_type": "auto",
         }
+        folder = os.path.dirname(name)
+        if folder:
+            options["folder"] = folder
         return cloudinary.uploader.upload(content, **options)
 
     def _save(self, name, content):
