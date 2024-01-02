@@ -2,15 +2,18 @@ import os
 
 import cloudinary
 import cloudinary.uploader
+import environ
 import requests
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
 
+env = environ.Env()
+
 cloudinary.config(
-    cloud_name="krvishal",
-    api_key="559456187887572",
-    api_secret="VVoD6_cSi4MaZlemadej8xvG8MQ",
+    cloud_name=env("CLOUDINARY_CLOUD_NAME"),
+    api_key=env("CLOUDINARY_API_KEY"),
+    api_secret=env("CLOUDINARY_API_SECRET"),
 )
 
 
@@ -33,7 +36,6 @@ class CloudinaryFileStorage(Storage):
     def _get_url(self, name):
         name = self._prepend_prefix(name)
         cloudinary_resource = cloudinary.CloudinaryResource(name)
-        print(cloudinary_resource)
         return cloudinary_resource.url
 
     def _upload(self, name, content):
@@ -49,7 +51,6 @@ class CloudinaryFileStorage(Storage):
         name = self._normalise_name(name)
         name = self._prepend_prefix(name)
         response = self._upload(name, content)
-        print(response)
         return response["public_id"]
 
     def url(self, name) -> str:

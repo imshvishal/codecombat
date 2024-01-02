@@ -35,6 +35,7 @@ class Question(models.Model):
         max_length=20, choices={"E": "Easy", "M": "Medium", "H": "Hard"}
     )
     description = models.TextField(blank=True)
+    code_template = models.TextField(blank=True)
     duration = models.DurationField(default=timedelta(minutes=10))
 
     def __str__(self) -> str:
@@ -45,8 +46,10 @@ class TestCase(models.Model):
     question = models.ForeignKey(
         to=Question, on_delete=models.CASCADE, related_name="testcases"
     )
+    inputs = models.TextField(blank=True)
     output = models.CharField(max_length=500)
 
+    # TODO: Before saving the test case check if the no. of inputs is same as input required by the solution using inspect module
     def __str__(self) -> str:
         return f"{self.id} -> {self.question}"
 
@@ -63,6 +66,7 @@ class Submission(models.Model):
     )
     duration = models.DurationField()
     attempt = models.PositiveSmallIntegerField()
+    lang = models.CharField(max_length=15)
     code = models.TextField(blank=True)
     success = models.BooleanField(default=True)
 

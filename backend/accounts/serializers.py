@@ -1,3 +1,6 @@
+from collections import OrderedDict
+
+from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import Token
@@ -12,7 +15,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["username"] = user.username
         token["name"] = f"{user.first_name} {user.last_name}"
         token["email"] = user.email
-        token["avatar"] = user.avatar
+        if user.avatar:
+            token["avatar"] = user.avatar.url
         token["user_type"] = user.user_type
         return token
 
@@ -30,3 +34,9 @@ class UserSerializer(serializers.ModelSerializer):
             "groups",
             "user_permissions",
         )
+
+    def validate(self, attrs: OrderedDict):
+        password = attrs.get("password")
+        if password:
+            attrs["password"] = make_password(password)
+        return super().validate(attrs)
