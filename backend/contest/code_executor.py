@@ -4,6 +4,7 @@ from .models import Question
 
 client = docker.from_env()
 
+import shutil
 from typing import NamedTuple
 
 from django.conf import settings
@@ -24,9 +25,21 @@ lang_configs = {
     "javascript": LangConfig(
         "node:20-alpine3.18", ".js", ["node", "/mnt/submitted_code.js"]
     ),
-    "java": LangConfig("", ".java", []),
-    "c": LangConfig("", ".c", []),
-    "cpp": LangConfig("", ".cpp", []),
+    "cpp": LangConfig(
+        "esolang/cpp-clang:latest",
+        ".cpp",
+        ["sh", "-c", "g++ /mnt/submitted_code.cpp -o /mnt/code.out;/mnt/code.out"],
+    ),
+    "c": LangConfig(
+        "esolang/cpp-clang:latest",
+        ".c",
+        ["sh", "-c", "gcc /mnt/submitted_code.c -o /mnt/code.out;/mnt/code.out"],
+    ),
+    "java": LangConfig(
+        "amazoncorretto:21-alpine3.18",
+        ".java",
+        ["sh", "-c", "javac /mnt/submitted_code.java;java -cp /mnt Main"],
+    ),
 }
 
 
@@ -38,17 +51,13 @@ class CodeExecutor:
         self.code = code
         self.config = lang_configs[lang.lower()]
 
-        #  docker run -v ./xyz:/mnt c1f619b6477e36a0b6a2531a972e918ef32bbf0217ee9b536409361261db6df0
-
     def temp_volume(self):
         return settings.BASE_DIR / TEMP_CODE_FOLDER / f"user{self.user.id}"
 
     def __create_temp_code_file(self, path):
         path.mkdir(exist_ok=True, parents=True)
-        code_file = str(path) + f"\\submitted_code" + self.config.ext
-        with open(code_file, "w+") as file:
+        with (path / ("submitted_code" + self.config.ext)).open("w+") as file:
             file.write(self.code)
-        return code_file
 
     def test_submitted_code(self):
         path = self.temp_volume()
@@ -56,11 +65,18 @@ class CodeExecutor:
         container = client.containers.run(
             self.config.image,
             command=self.config.command,
-            volumes={f"{path}": {"bind": "/mnt", "mode": "ro"}},
+            volumes={f"{path}": {"bind": "/mnt", "mode": "rw"}},
             detach=True,
         )
         container.wait()
         output = container.logs().decode("utf-8").strip()
+        print(output)
         container.remove(force=True)
+        shutil.rmtree(path)
+
         # TODO: compare with testcases input and outputs
         return 1
+
+
+# class Main {public static void main(String[] args) {System.out.println(\"Hello, World!\");\n}}
+# include <stdio.h>\n\nint main(){printf(\"Hello World\");}
