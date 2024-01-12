@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 from django.db.models import Count, Sum
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
@@ -5,12 +7,14 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import Serializer
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from accounts.models import User
 from accounts.serializers import UserSerializer
 
+from .code_executor import CodeExecutor
 from .models import Contest, Question, Submission
 from .permissions import ContestPermission, QuestionPermission, SubmissionPermission
 from .serializers import (
@@ -25,10 +29,16 @@ from .serializers import (
 
 class CustomModelViewSet(ModelViewSet):
     def get_serializer_class(self):
-        if self.request.method == "GET":
-            return self.serializer_class[0]
-        else:
-            return self.serializer_class[1]
+        if issubclass(Serializer, self.serializer_class):
+            return self.serializer_class
+        elif (
+            isinstance(self.serializer_class, Iterable)
+            and len(self.serializer_class) > 1
+        ):
+            if self.request.method == "GET":
+                return self.serializer_class[0]
+            else:
+                return self.serializer_class[1]
 
     def list(self, request, *args, **kwargs):
         raise PermissionDenied()
@@ -81,7 +91,14 @@ class ContestViewSet(CustomModelViewSet):
     @action(["get"], detail=True)
     def submissions(self, request: Request, pk):
         contest = get_object_or_404(Contest, pk=pk)
-        serializer = SubmissionSerializer(contest.submissions, many=True)
+        serializer = SubmissionSerializer(
+            [
+                submission
+                for question in contest.questions.all()
+                for submission in question.submissions.all()
+            ],
+            many=True,
+        )
         return Response(serializer.data, 200)
 
     @action(["get"], detail=True)
@@ -128,9 +145,16 @@ class QuestionViewSet(CustomModelViewSet):
 
 class SubmissionViewSet(CustomModelViewSet):
     queryset = Submission.objects.all()
-    serializer_class = (SubmissionSerializer,)
+    serializer_class = SubmissionSerializer
     permission_classes = [SubmissionPermission]
 
     def create(self, request, *args, **kwargs):
-        # TODO: Implement the code to interpret or compile the submitted code and return response
-        response = super().create(request, *args, **kwargs)
+        lang = request.data.get("lang")
+        code = request.data.get("code")
+        question = request.data.get("question")
+        question = get_object_or_404(Question, pk=question)
+        executor = CodeExecutor(request, question, lang, code)
+        # TODO: Add 2 sec timeout
+        res = executor.test_submitted_code()
+        # response = super().create(request, *args, **kwargs)
+        return Response(res)

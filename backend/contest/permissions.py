@@ -37,11 +37,21 @@ class QuestionPermission(DataForValidContestPermission):
         if request.method not in SAFE_METHODS:
             return question.contest.organizer == request.user
         else:
-            question.contest.organizer == request.user or question.contest.enrolled_users.filter(
-                pk=request.user.id
-            ).exists()
+            return (
+                question.contest.organizer == request.user
+                or question.contest.enrolled_users.filter(pk=request.user.id).exists()
+            )
 
 
 class SubmissionPermission(DataForValidContestPermission):
     def has_object_permission(self, request: Request, view, obj):
+        print(request.method)
+        if request.method == "POST":
+            print(request.data)
+            return (
+                obj.question.contest.organizer == request.user
+                or obj.question.contest.enrolled_users.filter(
+                    pk=request.user.id
+                ).exists()
+            )
         return False

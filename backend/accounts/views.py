@@ -1,4 +1,5 @@
-from django.core.signals import request_started
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
@@ -12,13 +13,19 @@ from .permissions import IsSameUser
 from .serializers import UserSerializer
 
 
+# @method_decorator(csrf_protect, na)
 class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
     permission_classes = [IsSameUser]
 
+    @csrf_protect
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
     def list(self, request: Request, *args, **kwargs):
         raise PermissionDenied()
+
 
     @action(["GET"], True)
     def enrolled_contests(self, request: Request, pk):

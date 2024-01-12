@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from datetime import timedelta
 from pathlib import Path
 
-import cloudinary
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
