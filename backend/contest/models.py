@@ -62,10 +62,9 @@ class Submission(models.Model):
         to=Question, on_delete=models.CASCADE, related_name="submissions"
     )
     duration = models.DurationField()
-    attempt = models.PositiveSmallIntegerField()
     lang = models.CharField(max_length=15)
     code = models.TextField(blank=True)
-    success = models.BooleanField(default=True)
+    success = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return f"{self.user} ({self.question})"

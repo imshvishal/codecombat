@@ -1,7 +1,8 @@
 from collections.abc import Iterable
 
 from django.db.models import Count, Sum
-from django.shortcuts import get_object_or_404
+from django.http.response import HttpResponse
+from django.shortcuts import get_object_or_404, render
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -29,7 +30,9 @@ from .serializers import (
 
 class CustomModelViewSet(ModelViewSet):
     def get_serializer_class(self):
-        if issubclass(Serializer, self.serializer_class):
+        if not self.serializer_class:
+            return None
+        elif issubclass(Serializer, self.serializer_class):
             return self.serializer_class
         elif (
             isinstance(self.serializer_class, Iterable)
@@ -145,16 +148,39 @@ class QuestionViewSet(CustomModelViewSet):
 
 class SubmissionViewSet(CustomModelViewSet):
     queryset = Submission.objects.all()
-    serializer_class = SubmissionSerializer
-    permission_classes = [SubmissionPermission]
+    # serializer_class = SubmissionSerializer
+    permission_classes = []
 
     def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @action(methods=["post"], detail=False)
+    def run(self, request, *args, **kwargs):
+        res = self.run_code(request)
+        print(res)
+        return Response(res)
+
+    def run_code(self, request, *args, **kwargs):
         lang = request.data.get("lang")
         code = request.data.get("code")
-        question = request.data.get("question")
-        question = get_object_or_404(Question, pk=question)
-        executor = CodeExecutor(request, question, lang, code)
-        # TODO: Add 2 sec timeout
-        res = executor.test_submitted_code()
-        # response = super().create(request, *args, **kwargs)
-        return Response(res)
+        question = get_object_or_404(Question, pk=int(request.data.get("question")))
+        executor = CodeExecutor(lang, code)
+        res = executor.execute()
+        return res
+
+    # TODO: remove TestCode
+    @action(methods=["post", "get"], detail=False)
+    def run_temp(self, request, *args, **kwargs):
+        if request.method == "POST":
+            result = self.run_code(request)
+            print(r"VIEW: {}".format(result))
+            return render(
+                request,
+                "test.html",
+                {
+                    "result": result,
+                    "code": request.data.get("code"),
+                    "lang": request.data.get("lang"),
+                },
+            )
+        return render(request, "test.html")
