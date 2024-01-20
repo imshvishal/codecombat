@@ -1,11 +1,8 @@
-import asyncio
 import tempfile
+import threading
 from typing import NamedTuple
 
 import docker
-from asgiref.sync import async_to_sync, sync_to_async
-
-TEMP_CODE_FOLDER = "temp_codes"
 
 client = docker.from_env()
 
@@ -40,7 +37,7 @@ lang_configs = {
         "esolang/cpp-clang:latest",
         ".c",
         ["sh", "-c", "gcc submitted_code.c -o code.out"],
-        ["./code.out"],
+        ["sh", "-c", "./code.out"],
     ),
     "java": LangConfig(
         "amazoncorretto:21-alpine3.18",
@@ -52,48 +49,63 @@ lang_configs = {
 
 
 class CodeExecutor:
-    def __init__(self, lang: str, code: str):
+    def __init__(self, lang: str, code: str, question):
         self.language = lang
         self.code = code
+        self.question = question
         self.config = lang_configs[lang.lower()]
-        self.__output = b""
+        self.timer = threading.Timer(1.1, self.__remove_container)
+        self.status_msg = ""
 
-    def __create_temp_code_file(self, path):
-        with open(path + "\submitted_code" + self.config.ext, "w+") as file:
-            file.write(self.code)
-
-    def execute(self, testcases=[]) -> str:
-        with tempfile.TemporaryDirectory(prefix="codecombat_") as path:
-            self.__create_temp_code_file(path)
-            async_to_sync(self.__run_code_with_testcase)(path, testcases)
-            # TODO: compare with testcases input and outputs
-            return self.output
-
-    async def __run_code_with_testcase(self, code_dir, testcases):
-        container = client.containers.run(
+    def __enter__(self):
+        self.__create_temp_code_file()
+        self.container = client.containers.run(
             self.config.image,
-            volumes={f"{code_dir}": {"bind": "/mnt", "mode": "rw"}},
+            volumes={f"{self.temp_dir.name}": {"bind": "/mnt", "mode": "rw"}},
             detach=True,
             tty=True,
             working_dir="/mnt",
         )
-        if cmd := self.config.compile_cmd:
-            container.exec_run(cmd)
-        try:
-            async with asyncio.timeout(1.1):
-                ex_code, self.__output = await sync_to_async(
-                    container.exec_run, thread_sensitive=True
-                )(self.config.run_cmd)
-        except TimeoutError as e:
-            self.__output = b"Time Limit Exceeded"
-        container.remove(force=True)
+        self.compile_status = self.__compile_code()
+        return self
+
+    def __exit__(self, exc, value, tb):
+        self.temp_dir.cleanup()
+
+    def execute(self):
+        self.timer.start()
+        if (compile_status := self.compile_status) and compile_status.exit_code:
+            self.__output = compile_status.output
+        else:
+            self.__output = self.__run_code_with_testcase().output
         return self.output
+
+    def __compile_code(self):
+        if cmd := self.config.compile_cmd:
+            return self.container.exec_run(cmd)
+        return None
+
+    def __run_code_with_testcase(self):
+        output = self.container.exec_run(self.config.run_cmd)
+        return output
+
+    def __create_temp_code_file(self):
+        self.temp_dir = tempfile.TemporaryDirectory(prefix="codecombat_")
+        with open(
+            self.temp_dir.name + "\submitted_code" + self.config.ext, "w+"
+        ) as file:
+            file.write(self.code)
+
+    def __remove_container(self):
+        self.status_msg = "Time Limit Exceeded"
+        self.container.remove(force=True)
 
     @property
     def output(self):
-        return self.__output.decode("utf-8").strip()
-
-
-# class Main {public static void main(String[] args) {System.out.println(\"Hello, World!\");\n}}
-# class Main {public static void main(String[] args) {System.out.println("Hello, World!");}}
-# include <stdio.h>\n\nint main(){printf(\"Hello World\");}
+        TOTAL_OUTPUT_CHARS = 4096
+        output = self.__output.decode("utf-8", "replace").strip()
+        return (
+            output[:TOTAL_OUTPUT_CHARS]
+            + ("......." if len(output) > TOTAL_OUTPUT_CHARS else ""),
+            self.status_msg,
+        )

@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from functools import lru_cache
 
 from django.db.models import Count, Sum
 from django.http.response import HttpResponse
@@ -157,23 +158,20 @@ class SubmissionViewSet(CustomModelViewSet):
     @action(methods=["post"], detail=False)
     def run(self, request, *args, **kwargs):
         res = self.run_code(request)
-        print(res)
         return Response(res)
 
     def run_code(self, request, *args, **kwargs):
         lang = request.data.get("lang")
         code = request.data.get("code")
         question = get_object_or_404(Question, pk=int(request.data.get("question")))
-        executor = CodeExecutor(lang, code)
-        res = executor.execute()
-        return res
+        with CodeExecutor(lang, code, question) as executor:
+            return executor.execute()
 
     # TODO: remove TestCode
     @action(methods=["post", "get"], detail=False)
     def run_temp(self, request, *args, **kwargs):
         if request.method == "POST":
             result = self.run_code(request)
-            print(r"VIEW: {}".format(result))
             return render(
                 request,
                 "test.html",

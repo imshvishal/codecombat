@@ -55,25 +55,36 @@
 # data = rq.post("http://127.0.0.1:8000/api/submissions/", json=data)
 # print(data.text)
 
-import asyncio
-import time
+# import docker
 
-from asgiref.sync import sync_to_async
+# # Assuming you have a Docker client instance
+# client = docker.from_env()
+
+# # Create and run a container
+# container = client.containers.run("python:3.11.7-alpine3.18", detach=True, tty=True)
+
+# # Execute a command in the running container
+# command = "python -c 'while True:print(\"Hello World\")'"
+# exec_result = container.exec_run(command, tty=True)
+# print(dir(exec_result))
+# # container.remove(force=True)
+# # print(container.wait(timeout=2))
+# print("E", exec_result.output.decode("utf-8").strip())
+# # # Collect the logs from the initial TTY session
+# # logs = container.logs()
+
+# # # Print or process the logs as needed
+# # print("L", logs.decode("utf-8").strip())
+
+# # # Stop and remove the container
+# # container.stop()
+# # container.remove()
 
 
-async def inf():
-    while True:
-        print(1)
+import tempfile
 
-
-async def test():
-    print(1)
-    async with asyncio.timeout(2):
-        print(2)
-        await inf()
-        # await sync_to_async(time.sleep, thread_sensitive=True)(2)
-        print(3)
-    print(4)
-
-
-asyncio.run(test())
+dir = tempfile.TemporaryDirectory(prefix="hmmVishal_")
+print(f"XYZ {dir.name}")
+with open(dir.name + "\submitted_code" + ".py", "w+") as file:
+    file.write("print('Hello World')")
+dir.cleanup()
