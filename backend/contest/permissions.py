@@ -7,13 +7,12 @@ from .models import Contest
 class ContestPermission(BasePermission):
     def has_permission(self, request, view):
         if request.method == "POST":
-            # return True
-            return request.user.user_type == "ORG"
+            return request.user.is_authenticated and request.user.user_type == "ORG"
         return True
 
     def has_object_permission(self, request, view, contest):
         if request.method not in SAFE_METHODS:
-            return request.user == contest.organizer
+            return True
         return (
             contest.enrolled_users.filter(pk=request.user.id).exists()
             or request.user == contest.organizer
@@ -25,11 +24,12 @@ class DataForValidContestPermission(BasePermission):
         if request.method == "POST":
             contest = Contest.objects.filter(pk=request.data.get("contest", 0)).last()
             return (
-                request.user.user_type == "ORG"
+                request.user.is_authenticated
+                and request.user.user_type == "ORG"
                 and contest
                 and contest.organizer == request.user
             )
-        return True
+        return False
 
 
 class QuestionPermission(DataForValidContestPermission):
@@ -45,8 +45,8 @@ class QuestionPermission(DataForValidContestPermission):
 
 class SubmissionPermission(DataForValidContestPermission):
     def has_object_permission(self, request: Request, view, obj):
-        print(request.method)
         if request.method == "POST":
+            # TODO: check if the contest is live before submitting the submissions
             print(request.data)
             return (
                 obj.question.contest.organizer == request.user

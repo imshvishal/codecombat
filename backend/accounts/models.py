@@ -10,6 +10,3 @@ class User(AbstractUser):
         default="DEV",
         max_length=20,
     )
-
-
-# TODO: Add function to delete user avatar from cloudinary on user delete and update.

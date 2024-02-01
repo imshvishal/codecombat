@@ -1,4 +1,4 @@
 - [ ] Ratelimit
 - [ ] CSRF Token
-- [ ] TestCase checking
-- [ ] 1 sec execution time
+- [x] TestCase checking
+- [ ] Check if the contest is live before submitting the submissions

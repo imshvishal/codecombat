@@ -2,15 +2,12 @@ from collections.abc import Iterable
 from functools import lru_cache
 
 from django.db.models import Count, Sum
-from django.http.response import HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.serializers import Serializer
-from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from accounts.models import User
@@ -24,6 +21,7 @@ from .serializers import (
     ContestSerializer,
     LeaderBoardSerializer,
     QuestionSerializer,
+    SubmissionOfNoContestSerializer,
     SubmissionSerializer,
     TestCaseSerializer,
 )
@@ -31,11 +29,7 @@ from .serializers import (
 
 class CustomModelViewSet(ModelViewSet):
     def get_serializer_class(self):
-        if not self.serializer_class:
-            return None
-        elif issubclass(Serializer, self.serializer_class):
-            return self.serializer_class
-        elif (
+        if (
             isinstance(self.serializer_class, Iterable)
             and len(self.serializer_class) > 1
         ):
@@ -43,6 +37,8 @@ class CustomModelViewSet(ModelViewSet):
                 return self.serializer_class[0]
             else:
                 return self.serializer_class[1]
+        else:
+            return self.serializer_class
 
     def list(self, request, *args, **kwargs):
         raise PermissionDenied()
@@ -61,7 +57,7 @@ class CustomModelViewSet(ModelViewSet):
 class ContestViewSet(CustomModelViewSet):
     serializer_class = ContestSerializer, ContestCreateSerializer
     queryset = Contest.objects.all()
-    permission_classes = [ContestPermission]
+    # permission_classes = [IsAdminUser | ContestPermission]
 
     def perform_create_or_update(self, serializer):
         contest = serializer.save()
@@ -106,10 +102,14 @@ class ContestViewSet(CustomModelViewSet):
         return Response(serializer.data, 200)
 
     @action(["get"], detail=True)
+    @lru_cache()
     def leaderboard(self, request: Request, pk):
         contest = get_object_or_404(Contest, pk=pk)
         submissions = (
-            contest.submissions.values("user")
+            Submission.objects.filter(
+                question__in=contest.questions.all(), success=True
+            )
+            .values("user")
             .annotate(total_duration=Sum("duration"), submissions=Count("user"))
             .order_by("-submissions", "total_duration")
         )
@@ -125,7 +125,7 @@ class ContestViewSet(CustomModelViewSet):
 class QuestionViewSet(CustomModelViewSet):
     serializer_class = QuestionSerializer
     queryset = Question.objects.all()
-    permission_classes = [QuestionPermission]
+    permission_classes = [IsAdminUser | QuestionPermission]
 
     def perform_create_or_update(self, serializer):
         """There is no special endpoints for TestCases.. all the testcases will be handled with the help of this method only"""
@@ -149,36 +149,37 @@ class QuestionViewSet(CustomModelViewSet):
 
 class SubmissionViewSet(CustomModelViewSet):
     queryset = Submission.objects.all()
-    # serializer_class = SubmissionSerializer
-    permission_classes = []
+    serializer_class = SubmissionSerializer
+    # permission_classes = [IsAdminUser | SubmissionPermission]
 
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
     @action(methods=["post"], detail=False)
     def run(self, request, *args, **kwargs):
-        res = self.run_code(request)
-        return Response(res)
-
-    def run_code(self, request, *args, **kwargs):
-        lang = request.data.get("lang")
-        code = request.data.get("code")
-        question = get_object_or_404(Question, pk=int(request.data.get("question")))
-        with CodeExecutor(lang, code, question) as executor:
-            return executor.execute()
+        if (submission := self.get_serializer(data=request.data)).is_valid() or (
+            submission := SubmissionOfNoContestSerializer(data=request.data)
+        ).is_valid():
+            if self.get_queryset().filter(
+                user=submission.validated_data.get("user"),
+                question=submission.validated_data.get("question"),
+                success=True,
+            ):
+                return Response(
+                    {"error": "Already have a successfull submission."}, 403
+                )
+        else:
+            return Response(submission.errors)
+        with CodeExecutor(**submission.validated_data) as executor:
+            result = executor.execute()
+            if isinstance(submission, self.get_serializer_class()):
+                submission.save(success=result.get("success", False))
+            return Response(result, 200)
 
     # TODO: remove TestCode
     @action(methods=["post", "get"], detail=False)
     def run_temp(self, request, *args, **kwargs):
         if request.method == "POST":
             result = self.run_code(request)
-            return render(
-                request,
-                "test.html",
-                {
-                    "result": result,
-                    "code": request.data.get("code"),
-                    "lang": request.data.get("lang"),
-                },
-            )
-        return render(request, "test.html")
+            return Response(result)
+        return Response()

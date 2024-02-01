@@ -51,6 +51,12 @@ class SubmissionSerializer(ModelSerializer):
         fields = "__all__"
 
 
+class SubmissionOfNoContestSerializer(ModelSerializer):
+    class Meta:
+        model = Submission
+        fields = ("user", "lang", "code")
+
+
 class LeaderBoardSerializer(Serializer):
     user = UserSerializer()
     rank = serializers.IntegerField()

@@ -23,7 +23,7 @@ class Contest(models.Model):
     is_private = models.BooleanField(default=True)
 
     def __str__(self) -> str:
-        return f"{self.id}. {self.title} ({self.organizer.username})"
+        return f"{self.title}"
 
 
 class Question(models.Model):
@@ -39,19 +39,18 @@ class Question(models.Model):
     duration = models.DurationField(default=timedelta(minutes=10))
 
     def __str__(self) -> str:
-        return f"{self.id}. {self.title} ({self.contest})"
+        return f"{self.title} ({self.contest})"
 
 
 class TestCase(models.Model):
     question = models.ForeignKey(
         to=Question, on_delete=models.CASCADE, related_name="testcases"
     )
-    inputs = models.TextField(blank=True)
+    input = models.TextField(blank=True)
     output = models.TextField(blank=True)
 
-    # FIXME Before saving the test case check if the no. of inputs is same as input required by the solution using inspect module
     def __str__(self) -> str:
-        return f"{self.id} -> {self.question}"
+        return f"{self.question}"
 
 
 class Submission(models.Model):
@@ -62,9 +61,18 @@ class Submission(models.Model):
         to=Question, on_delete=models.CASCADE, related_name="submissions"
     )
     duration = models.DurationField()
-    lang = models.CharField(max_length=15)
+    lang = models.CharField(
+        max_length=15,
+        choices=(
+            ("python", "Python"),
+            ("java", "Java"),
+            ("c", "C"),
+            ("cpp", "Cpp"),
+            ("javascript", "JavaScript"),
+        ),
+    )
     code = models.TextField(blank=True)
     success = models.BooleanField(default=False)
 
     def __str__(self) -> str:
-        return f"{self.user} ({self.question})"
+        return f"{self.question}"

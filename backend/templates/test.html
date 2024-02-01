@@ -12,15 +12,15 @@
         <h1>Submit Code</h1>
         <form method="post" id="codeForm">
             <select name="lang">
-                <option value="python" {% if lang == 'python' %}selected="selected"{% endif %}>Python</option>
-                <option value="cpp" {% if lang == 'cpp' %}selected="selected"{% endif %}>Cpp</option>
-                <option value="java" {% if lang == 'java' %}selected="selected"{% endif %}>Java</option>
-                <option value="c" {% if lang == 'c' %}selected="selected"{% endif %}>C</option>
-                <option value="javascript" {% if lang == 'javascript' %}selected="selected"{% endif %}>JavaScript</option>
+                <option value="python" {% if data.lang == 'python' %}selected="selected"{% endif %}>Python</option>
+                <option value="cpp" {% if data.lang == 'cpp' %}selected="selected"{% endif %}>Cpp</option>
+                <option value="java" {% if data.lang == 'java' %}selected="selected"{% endif %}>Java</option>
+                <option value="c" {% if data.lang == 'c' %}selected="selected"{% endif %}>C</option>
+                <option value="javascript" {% if data.lang == 'javascript' %}selected="selected"{% endif %}>JavaScript</option>
             </select><br>
-            <textarea name="code" id="" cols="80" rows="30">{{code}}</textarea><br>
+            <textarea name="code" id="" cols="80" rows="30">{{data.code}}</textarea><br>
+            <input type="number" name="question" value="{{data.question}}" ><br>
             <div style="display: none;">
-                <input type="number" name="question" value="3" ><br>
                 <input type="number" name="user" value="1" ><br>
                 <input type="text" name="duration" value="10:00" ><br>
             </div>
