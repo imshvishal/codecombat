@@ -31,7 +31,7 @@ import environ
 
 environ.Env.read_env(BASE_DIR / ".env")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["grown-hermit-learning.ngrok-free.app", "localhost", "127.0.0.1"]
 
 CORS_ALLOWED_ORIGINS = []
 

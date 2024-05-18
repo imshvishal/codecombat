@@ -55,7 +55,8 @@ class SubmissionOfNoContestSerializer(ModelSerializer):
 class LeaderBoardSerializer(Serializer):
     user = UserSerializer()
     rank = serializers.IntegerField()
-    submissions = serializers.IntegerField()
+    submissions_failed = serializers.IntegerField()
+    submissions_success = serializers.IntegerField()
     total_duration = serializers.DurationField()
 
     class Meta:

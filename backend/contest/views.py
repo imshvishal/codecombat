@@ -1,11 +1,10 @@
 from collections.abc import Iterable
 from functools import lru_cache
 
-from django.db.models import Count, Sum
+from django.db.models import Case, Count, Sum, When
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -135,13 +134,16 @@ class ContestViewSet(CustomModelViewSet):
     @action(["get"], detail=True)
     @lru_cache()
     def leaderboard(self, request: Request, contest_code):
+        # TODO: Consider fail submissions as well...
         submissions = (
-            Submission.objects.filter(
-                question__contest__contest_code=contest_code, success=True
-            )
+            Submission.objects.filter(question__contest__contest_code=contest_code)
             .values("user")
-            .annotate(total_duration=Sum("duration"), submissions=Count("user"))
-            .order_by("-submissions", "total_duration")
+            .annotate(
+                total_duration=Sum(Case(When(success=True, then="duration"))),
+                submissions_failed=Count(Case(When(success=False, then=1))),
+                submissions_success=Count(Case(When(success=True, then=1))),
+            )
+            .order_by("-submissions_success", "total_duration", "submissions_failed")
         )
         if not submissions.exists():
             return Response({"detail": "No submissions."}, status=404)
