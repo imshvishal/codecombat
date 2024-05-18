@@ -1,7 +1,6 @@
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_protect
+from django.shortcuts import get_object_or_404
+from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -10,44 +9,55 @@ from rest_framework.viewsets import ModelViewSet
 from contest.serializers import ContestSerializer, SubmissionSerializer
 
 from .models import User
-from .permissions import IsSameUser
+from .permissions import UserPermission
 from .serializers import UserSerializer
 
 
-# @method_decorator(csrf_protect, na)
 class UserViewSet(ModelViewSet):
+    lookup_field = "username"
     serializer_class = UserSerializer
     queryset = User.objects.all()
-    permission_classes = [IsAdminUser | IsSameUser]
+    permission_classes = [IsAdminUser | UserPermission]
 
-    @csrf_protect
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+    def get_object(self):
+        instance = get_object_or_404(
+            self.queryset,
+            username=(
+                un
+                if (un := self.kwargs["username"]) != "@me"
+                else self.request.user.username
+            ),
+        )
+        return instance
 
-    def list(self, request: Request, *args, **kwargs):
-        raise PermissionDenied()
+    def retrieve(self, request, *args, **kwargs):
+        user = self.get_object()
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(["GET"], True)
-    def enrolled_contests(self, request: Request, pk):
-        user = self.queryset.get(pk=pk)
+    def enrolled_contests(self, request: Request, username):
+        user = self.get_object()
         serializer = ContestSerializer(user.enrolled_contests, many=True)
-        return Response(serializer.data, status=200)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(["GET"], True)
-    def created_contests(self, request: Request, pk):
-        user = self.queryset.get(pk=pk)
+    def created_contests(self, request: Request, username):
+        user = self.get_object()
         serializer = ContestSerializer(user.created_contests, many=True)
-        return Response(serializer.data, status=200)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(["GET"], True)
-    def submissions(self, request: Request, pk):
-        user = self.queryset.get(pk=pk)
+    def submissions(self, request: Request, username):
+        user = self.get_object()
         contest = request.GET.get("contest", None)
         question = request.GET.get("question", None)
-        filter = {}
+        filter_kwargs = {}
         if contest:
-            filter["contest"] = contest
+            filter_kwargs["question__contest__contest_code"] = contest
         if question:
-            filter["question"] = question
-        serializer = SubmissionSerializer(user.submissions.filter(**filter), many=True)
-        return Response(serializer.data, status=200)
+            filter_kwargs["question"] = question
+        serializer = SubmissionSerializer(
+            user.submissions.filter(**filter_kwargs), many=True
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)

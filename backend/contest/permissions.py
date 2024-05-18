@@ -1,57 +1,81 @@
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.request import Request
 
-from .models import Contest
+from .models import Contest, Question
 
 
 class ContestPermission(BasePermission):
     def has_permission(self, request, view):
-        if request.method == "POST":
-            return request.user.is_authenticated and request.user.user_type == "ORG"
+        if view.action == "list":
+            return False
+        elif view.action == "create":
+            return request.user.user_type == "ORG"
+        contest = Contest.objects.filter(
+            contest_code__iexact=view.kwargs.get("contest_code")
+        ).last()
+        if view.action in ["pending_users", "approve_users", "submissions"]:
+            return contest and contest.organizer == request.user
+        elif view.action == "questions":
+            return request.user == contest.organizer or (
+                contest.enrolled_users.filter(pk=request.user.id).exists()
+                and contest.is_live
+            )
         return True
 
     def has_object_permission(self, request, view, contest):
         if request.method not in SAFE_METHODS:
-            return True
-        return (
-            contest.enrolled_users.filter(pk=request.user.id).exists()
-            or request.user == contest.organizer
-        )
+            return request.user == contest.organizer
+        return True
 
 
-class DataForValidContestPermission(BasePermission):
+class QuestionPermission(BasePermission):
     def has_permission(self, request, view):
-        if request.method == "POST":
+        if view.action == "list":
+            return False
+        elif view.action == "create":
             contest = Contest.objects.filter(pk=request.data.get("contest", 0)).last()
-            return (
-                request.user.is_authenticated
-                and request.user.user_type == "ORG"
-                and contest
-                and contest.organizer == request.user
-            )
-        return False
+            return contest and contest.organizer == request.user
+        question = Question.objects.filter(pk=view.kwargs.get("question_id")).last()
+        if view.action == "submissions":
+            return question and request.user == question.contest.organizer
+        return True
 
-
-class QuestionPermission(DataForValidContestPermission):
     def has_object_permission(self, request, view, question):
         if request.method not in SAFE_METHODS:
             return question.contest.organizer == request.user
-        else:
+        return question.contest.organizer == request.user or (
+            question.contest.enrolled_users.filter(pk=request.user.id).exists()
+            and question.contest.is_live
+        )
+
+
+class SubmissionPermission(BasePermission):
+    def has_permission(self, request, view):
+        if view.action == "list":
+            return False
+        elif view.action in ["create", "run"]:
+            question = Question.objects.filter(
+                pk=request.data.get("question", 0)
+            ).last()
             return (
-                question.contest.organizer == request.user
-                or question.contest.enrolled_users.filter(pk=request.user.id).exists()
+                (
+                    question.contest.organizer == request.user
+                    or (
+                        question.contest.enrolled_users.filter(
+                            pk=request.user.id
+                        ).exists()
+                        and question.contest.is_live
+                    )
+                )
+                if question
+                else True
             )
+        return True
 
-
-class SubmissionPermission(DataForValidContestPermission):
     def has_object_permission(self, request: Request, view, obj):
-        if request.method == "POST":
-            # TODO: check if the contest is live before submitting the submissions
-            print(request.data)
-            return (
-                obj.question.contest.organizer == request.user
-                or obj.question.contest.enrolled_users.filter(
-                    pk=request.user.id
-                ).exists()
-            )
-        return False
+        if request.method not in SAFE_METHODS:
+            return False
+        return (
+            obj.question.contest.organizer == request.user
+            or obj.question.contest.enrolled_users.filter(pk=request.user.id).exists()
+        )

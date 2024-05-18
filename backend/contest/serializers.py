@@ -1,9 +1,5 @@
 from rest_framework import serializers
-from rest_framework.serializers import (
-    ModelSerializer,
-    Serializer,
-    SerializerMethodField,
-)
+from rest_framework.serializers import ModelSerializer, Serializer
 
 from accounts.serializers import UserSerializer
 
@@ -11,11 +7,9 @@ from .models import Contest, Question, Submission, TestCase
 
 
 class ContestCreateSerializer(ModelSerializer):
-    questions = SerializerMethodField()
-
     class Meta:
         model = Contest
-        fields = "__all__"
+        exclude = ("pending_users",)
 
     def get_questions(self, contest):
         questions = contest.questions.all()
@@ -54,7 +48,8 @@ class SubmissionSerializer(ModelSerializer):
 class SubmissionOfNoContestSerializer(ModelSerializer):
     class Meta:
         model = Submission
-        fields = ("user", "lang", "code")
+        fields = ["lang", "code"]
+        extra_kwargs = {"code": {"required": True}}
 
 
 class LeaderBoardSerializer(Serializer):

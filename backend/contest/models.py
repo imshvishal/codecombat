@@ -1,6 +1,9 @@
+import uuid
 from datetime import timedelta
+from typing import Iterable
 
 from django.db import models
+from django.utils import timezone
 
 from accounts.models import User
 
@@ -8,8 +11,11 @@ from accounts.models import User
 # Create your models here.
 class Contest(models.Model):
     organizer = models.ForeignKey(
-        to=User, on_delete=models.CASCADE, related_name="created_contests"
+        to=User,
+        on_delete=models.CASCADE,
+        related_name="created_contests",
     )
+    contest_code = models.CharField(unique=True, max_length=15, null=True)
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True)
     cover_image = models.ImageField(null=True, blank=True, upload_to="contest_cover")
@@ -19,11 +25,33 @@ class Contest(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     enrolled_users = models.ManyToManyField(
         to=User, related_name="enrolled_contests", blank=True
-    )  # Get User from email CSV and set enrolled_users
+    )
+    pending_users = models.ManyToManyField(
+        to=User, related_name="pending_contests", blank=True
+    )
     is_private = models.BooleanField(default=True)
 
     def __str__(self) -> str:
         return f"{self.title}"
+
+    def save(self, *args, **kwargs):
+        if not self.contest_code:
+            # include this ca still get into Not Unique error
+            uid = uuid.uuid4().hex
+            self.contest_code = uid[:4] + uid[-5:]
+        return super().save(*args, **kwargs)
+
+    @property
+    def is_live(self):
+        return (
+            self.start_time <= timezone.now() <= self.start_time + self.context_time()
+        )
+
+    def context_time(self):
+        timediff = timedelta()
+        for question in self.questions.all():
+            timediff += question.duration
+        return timediff
 
 
 class Question(models.Model):

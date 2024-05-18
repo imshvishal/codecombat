@@ -6,7 +6,15 @@ from typing import NamedTuple
 
 import docker
 
-client = docker.from_env()
+try:
+    client = docker.from_env()
+except:
+    print("[ERROR]", "Docker is not active.")
+    exit(1)
+# client.images.pull("python:3.11.7-alpine3.18")
+# client.images.pull("node:20-alpine3.18")
+# client.images.pull("esolang/cpp-clang:latest")
+# client.images.pull("amazoncorretto:21-alpine3.18")
 
 
 class LangConfig(NamedTuple):
@@ -103,7 +111,6 @@ class CodeExecutor:
     def __run_code(self):
         if not ((question := self.question) and question.testcases.all()):
             exit_code, self.__output = self.container.exec_run(self.config.run_cmd)
-            print("X", self.output)
             return {}
         testcases = self.question.testcases.all()
         testcase_check = {}
@@ -134,7 +141,7 @@ class CodeExecutor:
     def __create_temp_code_file(self):
         self.temp_dir = tempfile.TemporaryDirectory(prefix="codecombat_")
         with open(
-            self.temp_dir.name + "\submitted_code" + self.config.ext, "w+"
+            self.temp_dir.name + r"\submitted_code" + self.config.ext, "w+"
         ) as file:
             file.write(self.code)
 
@@ -143,7 +150,6 @@ class CodeExecutor:
         self.container.remove(force=True)
 
     def close(self):
-        print("Close called")
         self.temp_dir.cleanup()
 
     @property
