@@ -11,10 +11,6 @@ try:
 except:
     print("[ERROR]", "Docker is not active.")
     exit(1)
-# client.images.pull("python:3.11.7-alpine3.18")
-# client.images.pull("node:20-alpine3.18")
-# client.images.pull("esolang/cpp-clang:latest")
-# client.images.pull("amazoncorretto:21-alpine3.18")
 
 
 class LangConfig(NamedTuple):
@@ -56,6 +52,11 @@ lang_configs = {
         ["sh", "-c", "java Main"],
     ),
 }
+
+images = list(map(lambda image: image.tags[0], client.images.list()))
+for key, value in lang_configs.items():
+    if value.image not in images:
+        client.images.pull(value.image)
 
 
 class CodeExecutor:

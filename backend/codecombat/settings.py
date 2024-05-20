@@ -31,7 +31,7 @@ import environ
 
 environ.Env.read_env(BASE_DIR / ".env")
 
-ALLOWED_HOSTS = ["grown-hermit-learning.ngrok-free.app", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["3.110.210.240", "127.0.0.1", "localhost"]
 
 CORS_ALLOWED_ORIGINS = []
 
@@ -49,12 +49,6 @@ INSTALLED_APPS = [
     "accounts",
     "contest",
 ]
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=15),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
-    "TOKEN_OBTAIN_SERIALIZER": "accounts.serializers.CustomTokenObtainPairSerializer",
-}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -133,7 +127,7 @@ AUTH_USER_MODEL = "accounts.User"
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Kolkata"
 
 USE_I18N = True
 
@@ -156,4 +150,11 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "TOKEN_OBTAIN_SERIALIZER": "accounts.serializers.CustomTokenObtainPairSerializer",
+    "UPDATE_LAST_LOGIN": True,
 }

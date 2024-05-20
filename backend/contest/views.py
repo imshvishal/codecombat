@@ -27,6 +27,7 @@ from .serializers import (
 )
 
 
+# TODO: Save live data like the time the editor left at andd code in the editor
 class CustomModelViewSet(ModelViewSet):
     def get_serializer_class(self):
         if (
@@ -134,7 +135,6 @@ class ContestViewSet(CustomModelViewSet):
     @action(["get"], detail=True)
     @lru_cache()
     def leaderboard(self, request: Request, contest_code):
-        # TODO: Consider fail submissions as well...
         submissions = (
             Submission.objects.filter(question__contest__contest_code=contest_code)
             .values("user")
@@ -176,7 +176,6 @@ class QuestionViewSet(CustomModelViewSet):
 
     @action(["get"], detail=True)
     def submissions(self, request: Request, pk):
-        """It will return all the submissions of that user for the question."""
         question = get_object_or_404(Question, pk=pk)
         serializer = SubmissionSerializer(
             question.submissions.filter(question=pk), many=True
@@ -208,7 +207,6 @@ class SubmissionViewSet(CustomModelViewSet):
                 )
         else:
             return Response(submission.errors)
-        print(submission.validated_data, self.get_serializer_class(), submission)
         with CodeExecutor(**submission.validated_data) as executor:
             result = executor.execute()
             if isinstance(submission, self.get_serializer_class()):

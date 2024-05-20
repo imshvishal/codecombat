@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import action
@@ -5,12 +6,41 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from contest.serializers import ContestSerializer, SubmissionSerializer
 
 from .models import User
 from .permissions import UserPermission
 from .serializers import UserSerializer
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if "access" in response.data:
+            response.set_cookie(
+                "access_token",
+                response.data["access"],
+                httponly=True,
+                secure=not settings.DEBUG,
+            )
+        if "refresh" in response.data:
+            response.set_cookie(
+                "refresh_token",
+                response.data["refresh"],
+                httponly=True,
+                secure=not settings.DEBUG,
+            )
+        return response
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if "access" in response.data:
+            response.set_cookie("access_token", response.data["access"], httponly=True)
+        return response
 
 
 class UserViewSet(ModelViewSet):

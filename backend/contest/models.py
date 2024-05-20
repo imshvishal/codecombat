@@ -1,6 +1,5 @@
 import uuid
 from datetime import timedelta
-from typing import Iterable
 
 from django.db import models
 from django.utils import timezone
@@ -8,7 +7,6 @@ from django.utils import timezone
 from accounts.models import User
 
 
-# Create your models here.
 class Contest(models.Model):
     organizer = models.ForeignKey(
         to=User,
