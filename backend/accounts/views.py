@@ -14,33 +14,32 @@ from .models import User
 from .permissions import UserPermission
 from .serializers import UserSerializer
 
+# class CustomTokenObtainPairView(TokenObtainPairView):
+#     def post(self, request, *args, **kwargs):
+#         response = super().post(request, *args, **kwargs)
+#         if "access" in response.data:
+#             response.set_cookie(
+#                 "access_token",
+#                 response.data["access"],
+#                 httponly=True,
+#                 secure=not settings.DEBUG,
+#             )
+#         if "refresh" in response.data:
+#             response.set_cookie(
+#                 "refresh_token",
+#                 response.data["refresh"],
+#                 httponly=True,
+#                 secure=not settings.DEBUG,
+#             )
+#         return response
 
-class CustomTokenObtainPairView(TokenObtainPairView):
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if "access" in response.data:
-            response.set_cookie(
-                "access_token",
-                response.data["access"],
-                httponly=True,
-                secure=not settings.DEBUG,
-            )
-        if "refresh" in response.data:
-            response.set_cookie(
-                "refresh_token",
-                response.data["refresh"],
-                httponly=True,
-                secure=not settings.DEBUG,
-            )
-        return response
 
-
-class CustomTokenRefreshView(TokenRefreshView):
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if "access" in response.data:
-            response.set_cookie("access_token", response.data["access"], httponly=True)
-        return response
+# class CustomTokenRefreshView(TokenRefreshView):
+#     def post(self, request, *args, **kwargs):
+#         response = super().post(request, *args, **kwargs)
+#         if "access" in response.data:
+#             response.set_cookie("access_token", response.data["access"], httponly=True)
+#         return response
 
 
 class UserViewSet(ModelViewSet):
@@ -58,12 +57,8 @@ class UserViewSet(ModelViewSet):
                 else self.request.user.username
             ),
         )
+        self.check_object_permissions(self.request, instance)
         return instance
-
-    def retrieve(self, request, *args, **kwargs):
-        user = self.get_object()
-        serializer = UserSerializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(["GET"], True)
     def enrolled_contests(self, request: Request, username):

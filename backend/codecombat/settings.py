@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "djoser",
     "accounts",
     "contest",
 ]
@@ -150,6 +151,15 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
+}
+
+DJOSER = {
+    "SET_PASSWORD_RETYPE": True,
+    "SERIALIZERS": {
+        "user_create": "accounts.serializers.UserCreateSerializer",
+        "user": "accounts.serializers.UserSerializer",
+        "current_user": "accounts.serializers.UserSerializer",
+    },
 }
 
 SIMPLE_JWT = {

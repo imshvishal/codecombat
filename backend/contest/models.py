@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from functools import lru_cache
 
 from django.db import models
 from django.utils import timezone
@@ -42,10 +43,11 @@ class Contest(models.Model):
     @property
     def is_live(self):
         return (
-            self.start_time <= timezone.now() <= self.start_time + self.context_time()
+            self.start_time <= timezone.now() <= self.start_time + self.contest_time()
         )
 
-    def context_time(self):
+    @lru_cache
+    def contest_time(self):
         timediff = timedelta()
         for question in self.questions.all():
             timediff += question.duration

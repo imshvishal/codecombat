@@ -1,6 +1,6 @@
 django == 5.0.6
 djangorestframework == 3.14.0
-djangorestframework-simplejwt == 5.3.1
+djoser == 2.2.2
 requests == 2.31.0
 cloudinary == 1.37.0
 pillow == 10.1.0
