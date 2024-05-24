@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser
@@ -13,33 +14,6 @@ from contest.serializers import ContestSerializer, SubmissionSerializer
 from .models import User
 from .permissions import UserPermission
 from .serializers import UserSerializer
-
-# class CustomTokenObtainPairView(TokenObtainPairView):
-#     def post(self, request, *args, **kwargs):
-#         response = super().post(request, *args, **kwargs)
-#         if "access" in response.data:
-#             response.set_cookie(
-#                 "access_token",
-#                 response.data["access"],
-#                 httponly=True,
-#                 secure=not settings.DEBUG,
-#             )
-#         if "refresh" in response.data:
-#             response.set_cookie(
-#                 "refresh_token",
-#                 response.data["refresh"],
-#                 httponly=True,
-#                 secure=not settings.DEBUG,
-#             )
-#         return response
-
-
-# class CustomTokenRefreshView(TokenRefreshView):
-#     def post(self, request, *args, **kwargs):
-#         response = super().post(request, *args, **kwargs)
-#         if "access" in response.data:
-#             response.set_cookie("access_token", response.data["access"], httponly=True)
-#         return response
 
 
 class UserViewSet(ModelViewSet):
@@ -57,7 +31,7 @@ class UserViewSet(ModelViewSet):
                 else self.request.user.username
             ),
         )
-        self.check_object_permissions(self.request, instance)
+        # self.check_object_permissions(self.request, instance)
         return instance
 
     @action(["GET"], True)
