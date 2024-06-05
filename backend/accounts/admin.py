@@ -7,6 +7,21 @@ from accounts.models import User
 # Register your models here.
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
+    add_fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "username",
+                    "email",
+                    "is_active",
+                    "is_staff",
+                    "password1",
+                    "password2",
+                )
+            },
+        ),
+    )
     list_display = (
         "username",
         "email",

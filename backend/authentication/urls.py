@@ -14,9 +14,8 @@ urlpatterns = [
         CustomProviderAuthView.as_view(),
         name="provider-auth",
     ),
-    path("jwt/create/", CustomTokenObtainPairView.as_view()),
-    path("jwt/refresh/", CustomTokenRefreshView.as_view()),
-    path("jwt/verify/", CustomTokenVerifyView.as_view()),
+    path("login/", CustomTokenObtainPairView.as_view()),
+    path("refresh/", CustomTokenRefreshView.as_view()),
+    path("verify/", CustomTokenVerifyView.as_view()),
     path("logout/", LogoutView.as_view()),
-    path("", include("djoser.urls")),
 ]

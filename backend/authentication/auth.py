@@ -1,5 +1,3 @@
-from django.conf import settings
-from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
@@ -11,7 +9,6 @@ class CustomJWTAuthentication(JWTAuthentication):
                 raw_token = request.COOKIES.get("access")
             else:
                 raw_token = self.get_raw_token(header)
-
             if raw_token is None:
                 return None
 

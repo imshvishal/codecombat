@@ -24,6 +24,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         extra_kwargs = {
@@ -31,11 +33,18 @@ class UserSerializer(serializers.ModelSerializer):
             "is_staff": {"read_only": True},
             "is_superuser": {"read_only": True},
             "is_active": {"read_only": True},
+            "mobile": {"write_only": True},
         }
         exclude = (
             "groups",
             "user_permissions",
         )
+
+    def get_avatar(self, obj):
+        request = self.context.get("request")
+        if obj.avatar and request:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
 
     def validate(self, attrs: OrderedDict):
         password = attrs.get("password")

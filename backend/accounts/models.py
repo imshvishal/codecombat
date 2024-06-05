@@ -1,4 +1,5 @@
-from django.contrib.auth.models import AbstractUser, User, UserManager
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.core.validators import RegexValidator
 from django.db import models
 
 
@@ -14,6 +15,17 @@ class UserAccountManager(UserManager):
 
 class User(AbstractUser):
     objects = UserAccountManager()
+    username = models.CharField(
+        max_length=50,
+        unique=True,
+        validators=[
+            RegexValidator(
+                "^[a-zA-Z0-9_]{3,}$",
+                message="Username must be alphanumeric and contain at least 3 characters",
+            )
+        ],
+    )
+    email = models.EmailField(unique=True)
     mobile = models.CharField(max_length=15, blank=True)
     avatar = models.ImageField(null=True, blank=True, upload_to="avatar")
     bio = models.CharField(max_length=100, blank=True)

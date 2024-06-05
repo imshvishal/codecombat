@@ -1,6 +1,5 @@
+from contests.models import Contest, Question, Submission, TestCase
 from django.contrib import admin
-
-from contest.models import Contest, Question, Submission, TestCase
 
 
 class TestCaseInline(admin.TabularInline):

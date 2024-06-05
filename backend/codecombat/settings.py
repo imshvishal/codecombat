@@ -15,9 +15,10 @@ ALLOWED_HOSTS = ["3.110.210.240", "127.0.0.1", "localhost"]
 
 CORS_ALLOWED_ORIGINS = []
 
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
-DOMAIN = getenv("DOMAIN")
+DOMAIN = getenv("DOMAIN", "127.0.0.1:3000")
 SITE_NAME = "CodeCombat"
 
 INSTALLED_APPS = [
@@ -32,7 +33,7 @@ INSTALLED_APPS = [
     "djoser",
     "authentication",
     "accounts",
-    "contest",
+    "contests",
 ]
 
 MIDDLEWARE = [
@@ -136,7 +137,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 MEDIA_ROOT = "media" if DEBUG else "codecombat"
-
+MEDIA_URL = "media/"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
@@ -150,13 +151,15 @@ REST_FRAMEWORK = {
 }
 
 DJOSER = {
+    "USER_ID_FIELD": "username",
     "USER_CREATE_PASSWORD_RETYPE": True,
+    "HIDE_USERS": False,
     "SET_PASSWORD_RETYPE": True,
     "PASSWORD_RESET_CONFIRM_RETYPE": True,
     "PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND": True,
     "PASSWORD_CHANGED_EMAIL_CONFIRMATION": False,
-    "SEND_CONFIRMATION_EMAIL": True,
-    "SEND_ACTIVATION_EMAIL": True,
+    "SEND_CONFIRMATION_EMAIL": not DEBUG,
+    "SEND_ACTIVATION_EMAIL": not DEBUG,
     "USERNAME_RESET_SHOW_EMAIL_NOT_FOUND": True,
     "USERNAME_CHANGED_EMAIL_CONFIRMATION": False,
     "ACTIVATION_URL": "auth/user-activation/{uid}/{token}",
@@ -167,12 +170,12 @@ DJOSER = {
         "user": "accounts.serializers.UserSerializer",
         "current_user": "accounts.serializers.UserSerializer",
     },
-    "PERMISSIONS": {
-        "user_create": ["rest_framework.permissions.IsAdminUser"],
-        "user_delete": ["rest_framework.permissions.IsAdminUser"],
-        "user": ["rest_framework.permissions.IsAdminUser"],
-        "user_list": ["rest_framework.permissions.IsAdminUser"],
-    },
+    # The permissions for user will not work as this has be defined in view file itself.
+    # "PERMISSIONS": {
+    #     "user_delete": ["rest_framework.permissions.IsAdminUser"],
+    #     "user": ["rest_framework.permissions.AllowAny"],
+    #     "user_list": ["rest_framework.permissions.IsAdminUser"],
+    # },
 }
 
 SIMPLE_JWT = {
@@ -182,6 +185,10 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
 }
 
+AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
+AUTH_COOKIE_SECURE = getenv("AUTH_COOKIE_SECURE", "True") == "True"
+AUTH_COOKIE_HTTP_ONLY = True
+AUTH_COOKIE_SAMESITE = getenv("AUTH_COOKIE_SAMESITE", "None")
 
 EMAIL_HOST = getenv("EMAIL_HOST")
 EMAIL_PORT = getenv("EMAIL_PORT")

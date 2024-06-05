@@ -6,21 +6,16 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from contest.serializers import ContestSerializer, SubmissionSerializer
+from accounts.serializers import UserSerializer
+from contests.serializers import ContestSerializer, SubmissionSerializer
 
-from .models import User
 from .permissions import UserPermission
-from .serializers import UserSerializer
 
 
-class UserViewSet(ModelViewSet):
-    lookup_field = "username"
-    serializer_class = UserSerializer
-    queryset = User.objects.all()
+class UserViewSet(DjoserUserViewSet):
     permission_classes = [IsAdminUser | UserPermission]
+    serializer_class = UserSerializer
 
     def get_object(self):
         instance = get_object_or_404(
@@ -31,7 +26,7 @@ class UserViewSet(ModelViewSet):
                 else self.request.user.username
             ),
         )
-        # self.check_object_permissions(self.request, instance)
+        self.check_object_permissions(self.request, instance)
         return instance
 
     @action(["GET"], True)
