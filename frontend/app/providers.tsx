@@ -7,7 +7,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ThemeProviderProps } from "next-themes/dist/types";
 import { Provider, useDispatch, useSelector } from "react-redux"
 import { store } from "@/redux/store";
-import { useUserQuery } from "@/redux/api/endpoints/userApi";
+import { useLazyUserQuery } from "@/redux/api/endpoints/userApi";
 import { login } from "@/redux/states/authStateSlice";
 
 export interface ProvidersProps {
@@ -17,24 +17,26 @@ export interface ProvidersProps {
 
 const AuthProvider = ({children}: {children: React.ReactNode}) => {
   const dispatch = useDispatch();
-  // const {user} = useSelector((state: any) => state.auth)
-  // console.log(1, user);
-  
-  // React.useEffect(() => {
-    try{
-      // if (!user){
-        const {data, isLoading} = useUserQuery({username: "@me"});
-        dispatch(login(data));
-      // }
-      }catch(error){}
-  // }, [])
-  return children
+  const {user} = useSelector((state: any) => state.auth)
+  const [getUser, {data: profile, isLoading, error}] = useLazyUserQuery();
+  React.useEffect(() => {
+    if (!user){
+      getUser({username: "@me"}).unwrap().then((data) => {
+        dispatch(login(data))
+      }).catch((error) => {
+        console.log(error);
+      });
+    }
+  }, [user])
+  return (
+    <>
+    {children}
+    </>
+  )
 }
 
 export function Providers({ children, themeProps }: ProvidersProps) {
-  const router = useRouter();
   return (
-    <NextUIProvider navigate={router.push}>
       <NextThemesProvider {...themeProps}>
         <Provider store={store}>
           <AuthProvider>
@@ -42,6 +44,5 @@ export function Providers({ children, themeProps }: ProvidersProps) {
           </AuthProvider>
         </Provider>
       </NextThemesProvider>
-    </NextUIProvider>
   );
 }

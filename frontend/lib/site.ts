@@ -1,13 +1,15 @@
 export type SiteConfig = typeof siteConfig;
 
+export class User{
+  constructor(public username: string) {
+  }
+}
+
 export const siteConfig = {
   name: "CodeCombat",
   description: "Unleash your algorithms!",
   navItems: [
-    {
-      label: "About",
-      href: "/about",
-    },
+
   ],
   links: {
     github: "https://github.com/imshvishal",

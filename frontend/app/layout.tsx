@@ -1,6 +1,6 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
-import { Link } from "@nextui-org/link";
+import Link from "next/link";
 import clsx from "clsx";
 
 import { Providers } from "./providers";
@@ -14,7 +14,7 @@ import { Toaster } from "@/components/ui/toaster";
 export const metadata: Metadata = {
   title: {
     default: siteConfig.name,
-    template: `%s - ${siteConfig.name}`,
+    template: '%s - ${siteConfig.name}',
   },
   description: siteConfig.description,
   icons: {
@@ -55,17 +55,18 @@ export default function RootLayout({
             <Toaster />
             <footer className="w-full flex items-center justify-center py-3">
               <Link
-                isExternal
+              target="_blank"
                 className="flex items-center gap-1 text-current"
                 href={siteConfig.links.github}
                 title="Vishal"
               >
                 <span className="text-default-600 flex flex-row">
-                  Made with &nbsp;
+                  {/* Made with &nbsp;
                   <HeartFilledIcon color="red" />
-                  &nbsp; in
+                  &nbsp; in */}
+                  Shut the Fuck Up! I am not a &nbsp;<p className="text-success"> frontend developer.</p>
                 </span>
-                <p className="text-success">India</p>
+                {/* <p className="text-success">India</p> */}
               </Link>
             </footer>
           </div>

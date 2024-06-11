@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Input } from "@nextui-org/input";
 import { subtitle, title } from "@/components/primitives";
 import { Button } from "@nextui-org/button";
@@ -11,6 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 
 const signUpSchema = z.object({
   username: z
@@ -26,8 +27,14 @@ const signUpSchema = z.object({
 });
 
 const SingUpPage = () => {
-  const navigator = useRouter()
-  const [signUpApi, {isLoading}] = useSignUpMutation();
+  const navigator = useRouter();
+  const isAuthenticated = useSelector((state: any) => state.auth.isAuthenticated);
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigator.push("/");
+    }
+  }, [isAuthenticated])
+  const [signUpApi, { isLoading }] = useSignUpMutation();
   const form = useForm({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -39,12 +46,21 @@ const SingUpPage = () => {
   });
 
   async function handleSubmit(values: z.infer<typeof signUpSchema>) {
-    try{
+    try {
       const data = await signUpApi(values).unwrap();
-      console.log(data);
-      toast({ title: "Sign up successful",description:"Welcome to CodeCombat! Kindly activate your account to continue!"});
-    }catch (error){
-      toast({ title: "Sign up failed", description: Object.values(error.data)[0][0] ,variant:"destructive"});
+      toast({
+        title: "Sign up successful",
+        description:
+          "Welcome to CodeCombat! Kindly activate your account to continue!",
+      });
+    } catch (error) {
+      toast({
+        title: "Sign up failed",
+        description: new String(
+          Object.values((error as { data: Array<Array<string>> }).data)[0][0]
+        ),
+        variant: "destructive",
+      });
     }
   }
 
@@ -70,6 +86,7 @@ const SingUpPage = () => {
                   label="Username"
                   placeholder="Enter your username"
                   labelPlacement="outside"
+                  variant="bordered"
                 />
                 <FormMessage />
               </FormItem>
@@ -86,6 +103,7 @@ const SingUpPage = () => {
                   label="Email"
                   placeholder="Enter your email"
                   labelPlacement="outside"
+                  variant="bordered"
                 />
                 <FormMessage />
               </FormItem>
@@ -103,6 +121,7 @@ const SingUpPage = () => {
                   placeholder="Enter your password"
                   type="password"
                   labelPlacement="outside"
+                  variant="bordered"
                 />
                 <FormMessage />
               </FormItem>
@@ -120,12 +139,19 @@ const SingUpPage = () => {
                   placeholder="Re-Enter your password"
                   type="password"
                   labelPlacement="outside"
+                  variant="bordered"
                 />
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button size="lg" type="submit" variant="flat" color="success" isLoading={isLoading}>
+          <Button
+            size="lg"
+            type="submit"
+            variant="flat"
+            color="success"
+            isLoading={isLoading}
+          >
             Sign Up
           </Button>
         </form>

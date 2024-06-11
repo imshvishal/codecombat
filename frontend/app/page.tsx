@@ -1,4 +1,4 @@
-import { Link } from "@nextui-org/link";
+import Link from "next/link";
 import { Snippet } from "@nextui-org/snippet";
 import { Code } from "@nextui-org/code";
 import { button as buttonStyles } from "@nextui-org/theme";
@@ -20,7 +20,7 @@ export default function Home() {
       <div className="flex gap-3">
         <Link
           className={buttonStyles({ variant: "bordered", radius: "full" })}
-          href="/login"
+          href="/contests"
         >
           <Logo size={20} />
           Join a Contest

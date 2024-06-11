@@ -1,5 +1,7 @@
 from collections import OrderedDict
+from os import getenv
 
+from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -41,9 +43,8 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_avatar(self, obj):
-        request = self.context.get("request")
-        if obj.avatar and request:
-            return request.build_absolute_uri(obj.avatar.url)
+        if obj and obj.avatar:
+            return getenv("BACKEND_DOMAIN") + obj.avatar.url
         return None
 
     def validate(self, attrs: OrderedDict):

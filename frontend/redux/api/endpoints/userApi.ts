@@ -15,4 +15,4 @@ const userApi = apiSlice.injectEndpoints({
     })
 })
 
-export const {useUserQuery, useUpdateUserMutation} = userApi;
+export const {useUserQuery, useUpdateUserMutation, useLazyUserQuery} = userApi;

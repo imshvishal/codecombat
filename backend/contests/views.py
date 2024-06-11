@@ -149,9 +149,7 @@ class ContestViewSet(CustomModelViewSet):
             return Response({"detail": "No submissions."}, status=404)
         for i, submission in enumerate(submissions, start=1):
             submission["rank"] = i
-            submission["user"] = UserSerializer(
-                User.objects.filter(pk=submission["user"]).last() or {}
-            ).data
+            submission["user"] = User.objects.filter(pk=submission["user"]).last()
         serializer = LeaderBoardSerializer(submissions, many=True)
         return Response(serializer.data, status=200)
 

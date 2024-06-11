@@ -14,11 +14,10 @@ DEBUG = getenv("DEBUG", "True") == "True"
 ALLOWED_HOSTS = ["3.110.210.240", "127.0.0.1", "localhost"]
 
 CORS_ALLOWED_ORIGINS = []
-
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
-DOMAIN = getenv("DOMAIN", "127.0.0.1:3000")
+DOMAIN = getenv("FRONTEND_DOMAIN", "127.0.0.1:3000")
 SITE_NAME = "CodeCombat"
 
 INSTALLED_APPS = [
