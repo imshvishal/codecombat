@@ -1,3 +1,4 @@
+import json
 from collections.abc import Iterable
 from functools import lru_cache
 
@@ -56,12 +57,18 @@ class ContestViewSet(CustomModelViewSet):
     lookup_field = "contest_code"
     serializer_class = ContestSerializer, ContestCreateSerializer
     queryset = Contest.objects.all()
-    permission_classes = [IsAdminUser | (IsAuthenticated & ContestPermission)]
+    permission_classes = [IsAdminUser | ContestPermission]
+
+    def create(self, request, *args, **kwargs):
+        print(request.data["questions"])
+        print(request.FILES)
+        return super().create(request, *args, **kwargs)
 
     def perform_create_or_update(self, serializer):
         contest = serializer.save()
         questions = self.request.data.get("questions", [])
-        for question_data in questions:
+        for question_data in json.loads(questions):
+
             question_serializer = QuestionSerializer(
                 data=question_data | {"contest": contest.id}
             )
@@ -76,7 +83,7 @@ class ContestViewSet(CustomModelViewSet):
                 testcase_serializer.save()
 
     @action(["get"], detail=True)
-    def join(self, request, contest_code):
+    def register(self, request, contest_code):
         contest = get_object_or_404(Contest, contest_code=contest_code)
         if contest.pending_users.filter(id=request.user.id).exists():
             return Response(
@@ -91,6 +98,16 @@ class ContestViewSet(CustomModelViewSet):
             contest.pending_users.add(request.user)
         else:
             contest.enrolled_users.add(request.user)
+        contest.save()
+        return Response({"detail": "OK"}, status=200)
+
+    @action(["get"], detail=True)
+    def deregister(self, request, contest_code):
+        contest = get_object_or_404(Contest, contest_code=contest_code)
+        if contest.enrolled_users.filter(id=request.user.id).exists():
+            contest.enrolled_users.remove(request.user)
+        if contest.pending_users.filter(id=request.user.id).exists():
+            contest.pending_users.remove(request.user)
         contest.save()
         return Response({"detail": "OK"}, status=200)
 

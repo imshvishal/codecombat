@@ -9,12 +9,23 @@ class ContestPermission(BasePermission):
         if view.action == "list":
             return False
         elif view.action == "create":
-            return request.user.user_type == "ORG"
+            return request.user.is_authenticated and request.user.user_type == "ORG"
         contest = Contest.objects.filter(
             contest_code__iexact=view.kwargs.get("contest_code")
         ).last()
         if view.action in ["pending_users", "approve_users", "submissions"]:
             return contest and contest.organizer == request.user
+        elif view.action in ("register",):
+            return contest and request.user.is_authenticated
+        elif view.action == "deregister":
+            return (
+                contest
+                and request.user.is_authenticated
+                and (
+                    contest.enrolled_users.filter(pk=request.user.id).exists()
+                    or contest.pending_users.filter(pk=request.user.id).exists()
+                )
+            )
         elif view.action == "questions":
             return request.user == contest.organizer or (
                 contest.enrolled_users.filter(pk=request.user.id).exists()

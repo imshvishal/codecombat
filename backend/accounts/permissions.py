@@ -5,7 +5,12 @@ class UserPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         if view.action == "list":
             return False
-        elif view.action in ["enrolled_contests", "created_contests", "submissions"]:
+        elif view.action in [
+            "enrolled_contests",
+            "created_contests",
+            "submissions",
+            "past_contests",
+        ]:
             return view.kwargs.get("username") in [request.user.username, "@me"]
         return True
 

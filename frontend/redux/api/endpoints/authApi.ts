@@ -28,20 +28,41 @@ const authApi = apiSlice.injectEndpoints({
       }),
     }),
     signUp: builder.mutation({
-      query: ({ username, email, password, re_password }) => ({
+      query: (body) => ({
         method: "POST",
         url: "/users/",
-        body: { username, email, password, re_password },
+        body: body,
       }),
     }),
-    userActivation: builder.mutation({
+    activateUser: builder.mutation({
       query: ({ uid, token }) => ({
         url: "/users/activation/",
         method: "POST",
         body: { uid, token },
       }),
     }),
-    resetPassword: builder.mutation({
+    sendUserActivationMail: builder.mutation({
+      query: (email) => ({
+        url: "/users/resend_activation/",
+        method: "POST",
+        body: { email },
+      }),
+    }),
+    sendUsernameResetMail: builder.mutation({
+      query: (email) => ({
+        url: "/users/reset_username/",
+        method: "POST",
+        body: { email },
+      }),
+    }),
+    resetUsernameConfirm: builder.mutation({
+      query: ({ uid, token, new_username, re_new_password }) => ({
+        url: "/users/reset_username_confirm/",
+        method: "POST",
+        body: { uid, token, new_username },
+      }),
+    }),
+    sendPasswordResetMail: builder.mutation({
       query: (email) => ({
         url: "/users/reset_password/",
         method: "POST",
@@ -65,7 +86,9 @@ export const {
   useRefreshLoginMutation,
   useVerifyMutation,
   useSignUpMutation,
-  useUserActivationMutation,
-  useResetPasswordMutation,
+  useActivateUserMutation,
+  useSendUserActivationMailMutation,
+  useSendPasswordResetMailMutation,
   useResetPasswordConfirmMutation,
+  useSendUsernameResetMailMutation,
 } = authApi;

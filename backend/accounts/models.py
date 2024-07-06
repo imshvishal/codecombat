@@ -31,9 +31,9 @@ class User(AbstractUser):
     bio = models.CharField(max_length=100, blank=True)
     is_active = models.BooleanField(default=False)
     user_type = models.CharField(
-        choices={"DEV": "Developer", "ORG": "Organization"},
-        default="DEV",
+        choices={"DEV": "Developer", "ORG": "Organizer"},
         max_length=20,
+        default="DEV",
     )
 
     def __str__(self):

@@ -98,9 +98,9 @@ class CustomTokenRefreshView(TokenRefreshView):
 
 
 class CustomTokenVerifyView(TokenVerifyView):
-    def post(self, request, *args, **kwargs):
-        access_token = request.COOKIES.get("access")
 
+    def post(self, request, *args, **kwargs):
+        access_token = request.COOKIES.get("access") or request.data.get("token")
         if access_token:
             request.data["token"] = access_token
 
@@ -110,6 +110,6 @@ class CustomTokenVerifyView(TokenVerifyView):
 class LogoutView(APIView):
     def post(self, request, *args, **kwargs):
         response = Response(status=status.HTTP_204_NO_CONTENT)
-        response.delete_cookie("access")
-        response.delete_cookie("refresh")
+        response.delete_cookie("access", samesite=settings.AUTH_COOKIE_SAMESITE)
+        response.delete_cookie("refresh", samesite=settings.AUTH_COOKIE_SAMESITE)
         return response

@@ -6,12 +6,6 @@ from typing import NamedTuple
 
 import docker
 
-try:
-    client = docker.from_env()
-except:
-    print("[ERROR]", "Docker is not active.")
-    exit(1)
-
 
 class LangConfig(NamedTuple):
     image: str
@@ -53,10 +47,16 @@ lang_configs = {
     ),
 }
 
-images = list(map(lambda image: image.tags[0], client.images.list()))
-for key, value in lang_configs.items():
-    if value.image not in images:
-        client.images.pull(value.image)
+
+try:
+    client = docker.from_env()
+    images = list(map(lambda image: image.tags[0], client.images.list()))
+    for key, value in lang_configs.items():
+        if value.image not in images:
+            client.images.pull(value.image)
+except:
+    print("[ERROR]", "Docker is not active.")
+    # exit(1)
 
 
 class CodeExecutor:

@@ -12,28 +12,42 @@ import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
+import { Select, SelectItem } from "@nextui-org/react";
 
-const signUpSchema = z.object({
-  username: z
-    .string()
-    .min(3, { message: "Minimum length should be 3" })
-    .regex(/^[a-zA-Z0-9]+$/, { message: "Please enter a valid username" }),
-  email: z
-    .string()
-    .min(1, { message: "Please enter an email" })
-    .email({ message: "Please enter a valid email" }),
-  password: z.string().min(8, { message: "Please enter a valid password" }),
-  re_password: z.string().min(8, { message: "Please re-enter your password" }),
-});
+const signUpSchema = z
+  .object({
+    username: z
+      .string()
+      .min(3, { message: "Minimum length should be 3" })
+      .regex(/^[a-z0-9\_]+$/, {
+        message: "Username should be alphanumeric and lowercase",
+      }),
+    email: z
+      .string()
+      .min(1, { message: "Please enter an email" })
+      .email({ message: "Please enter a valid email" })
+      .toLowerCase(),
+    password: z.string().min(8, { message: "Please enter a valid password" }),
+    re_password: z
+      .string()
+      .min(8, { message: "Please re-enter your password" }),
+    user_type: z.string(),
+  })
+  .refine((data) => data.password === data.re_password, {
+    message: "Passwords do not match",
+    path: ["re_password"],
+  });
 
 const SingUpPage = () => {
   const navigator = useRouter();
-  const isAuthenticated = useSelector((state: any) => state.auth.isAuthenticated);
+  const isAuthenticated = useSelector(
+    (state: any) => state.auth.isAuthenticated
+  );
   useEffect(() => {
     if (isAuthenticated) {
       navigator.push("/");
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated]);
   const [signUpApi, { isLoading }] = useSignUpMutation();
   const form = useForm({
     resolver: zodResolver(signUpSchema),
@@ -42,6 +56,7 @@ const SingUpPage = () => {
       email: "",
       password: "",
       re_password: "",
+      user_type: "",
     },
   });
 
@@ -53,6 +68,7 @@ const SingUpPage = () => {
         description:
           "Welcome to CodeCombat! Kindly activate your account to continue!",
       });
+      navigator.push("/auth/login");
     } catch (error) {
       toast({
         title: "Sign up failed",
@@ -65,7 +81,7 @@ const SingUpPage = () => {
   }
 
   return (
-    <div className="md:w-1/2 lg:w-1/5 w-full">
+    <div className="px-8 md:px-0 md:w-1/2 lg:w-1/5 w-full">
       <h1 className={title({ size: "sm" })}>Sign Up</h1>
       <h2 className={subtitle({ class: "mb-4 text-slate-500" })}>
         Create an account to continue!
@@ -145,12 +161,36 @@ const SingUpPage = () => {
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="user_type"
+            render={({ field }) => (
+              <FormItem>
+                <Select
+                  size="lg"
+                  label="Select user type"
+                  labelPlacement="outside"
+                  defaultSelectedKeys={["DEV"]}
+                  variant="bordered"
+                  {...field}
+                >
+                  <SelectItem key="DEV" value="DEV">
+                    Developer
+                  </SelectItem>
+                  <SelectItem key="ORG" value="ORG">
+                    Organizer
+                  </SelectItem>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <Button
             size="lg"
             type="submit"
             variant="flat"
-            color="success"
             isLoading={isLoading}
+            color="primary"
           >
             Sign Up
           </Button>

@@ -6,18 +6,30 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 import environ
 
-environ.Env.read_env(BASE_DIR / ".env")
+environ.Env.read_env(BASE_DIR / ".env", overwrite=True)
 
 SECRET_KEY = getenv("DJANGO_SECRET_KEY")
 DEBUG = getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["3.110.210.240", "127.0.0.1", "localhost"]
+ALLOWED_HOSTS = [
+    "3.110.210.240",
+    "127.0.0.1",
+    "localhost",
+    "subtle-starling-especially.ngrok-free.app",
+]
 
-CORS_ALLOWED_ORIGINS = []
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://subtle-starling-especially.ngrok-free.app",
+    "http://3.110.210.240:6969",
+]
 CORS_ALLOW_CREDENTIALS = True
 
-DOMAIN = getenv("FRONTEND_DOMAIN", "127.0.0.1:3000")
+BACKEND_DOMAIN = getenv("BACKEND_DOMAIN", "localhost:8000")
+DOMAIN = getenv("FRONTEND_DOMAIN", "localhost:3000")
+
 SITE_NAME = "CodeCombat"
 
 INSTALLED_APPS = [
@@ -46,7 +58,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-if not DEBUG:
+USE_CLOUDINARY_STORAGE = not DEBUG
+
+if USE_CLOUDINARY_STORAGE:
     STORAGES = {
         "default": {
             "BACKEND": "codecombat.storages.CloudinaryFileStorage",
@@ -119,26 +133,12 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 AUTH_USER_MODEL = "accounts.User"
-# Internationalization
-# https://docs.djangoproject.com/en/5.0/topics/i18n/
 
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "Asia/Kolkata"
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
-
-STATIC_URL = "static/"
-MEDIA_ROOT = "media" if DEBUG else "codecombat"
-MEDIA_URL = "media/"
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -157,8 +157,8 @@ DJOSER = {
     "PASSWORD_RESET_CONFIRM_RETYPE": True,
     "PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND": True,
     "PASSWORD_CHANGED_EMAIL_CONFIRMATION": False,
-    "SEND_CONFIRMATION_EMAIL": not DEBUG,
-    "SEND_ACTIVATION_EMAIL": not DEBUG,
+    "SEND_CONFIRMATION_EMAIL": not True,
+    "SEND_ACTIVATION_EMAIL": not True,
     "USERNAME_RESET_SHOW_EMAIL_NOT_FOUND": True,
     "USERNAME_CHANGED_EMAIL_CONFIRMATION": False,
     "ACTIVATION_URL": "auth/user-activation/{uid}/{token}",
@@ -168,19 +168,14 @@ DJOSER = {
         "user_create": "accounts.serializers.UserSerializer",
         "user": "accounts.serializers.UserSerializer",
         "current_user": "accounts.serializers.UserSerializer",
+        "user_create_password_retype": "accounts.serializers.UserSerializer",
     },
-    # The permissions for user will not work as this has be defined in view file itself.
-    # "PERMISSIONS": {
-    #     "user_delete": ["rest_framework.permissions.IsAdminUser"],
-    #     "user": ["rest_framework.permissions.AllowAny"],
-    #     "user_list": ["rest_framework.permissions.IsAdminUser"],
-    # },
 }
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
-    "TOKEN_OBTAIN_SERIALIZER": "accounts.serializers.CustomTokenObtainPairSerializer",
+    "TOKEN_OBTAIN_SERIALIZER": "authentication.serializers.CustomTokenObtainPairSerializer",
     "UPDATE_LAST_LOGIN": True,
 }
 
@@ -188,9 +183,13 @@ AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 AUTH_COOKIE_SECURE = getenv("AUTH_COOKIE_SECURE", "True") == "True"
 AUTH_COOKIE_HTTP_ONLY = True
 AUTH_COOKIE_SAMESITE = getenv("AUTH_COOKIE_SAMESITE", "None")
-
+# AUTH_COOKIE_DOMAIN = getenv("AUTH_COOKIE_DOMAIN")
 EMAIL_HOST = getenv("EMAIL_HOST")
 EMAIL_PORT = getenv("EMAIL_PORT")
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = getenv("EMAIL_HOST_PASSWORD")
+
+STATIC_URL = "static/"
+MEDIA_ROOT = "codecombat" if USE_CLOUDINARY_STORAGE else "media"
+MEDIA_URL = "media/"

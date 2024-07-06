@@ -14,6 +14,7 @@ class CustomUserAdmin(UserAdmin):
                 "fields": (
                     "username",
                     "email",
+                    "user_type",
                     "is_active",
                     "is_staff",
                     "password1",
@@ -29,6 +30,7 @@ class CustomUserAdmin(UserAdmin):
         "last_name",
         "is_active",
         "is_staff",
+        "user_type",
     )
     fieldsets = (
         (None, {"fields": ("username", "password")}),

@@ -1,8 +1,11 @@
 from django.conf import settings
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -15,9 +18,13 @@ from .permissions import UserPermission
 
 class UserViewSet(DjoserUserViewSet):
     permission_classes = [IsAdminUser | UserPermission]
-    serializer_class = UserSerializer
 
     def get_object(self):
+        if (
+            self.kwargs.get("username") == "@me"
+            and not self.request.user.is_authenticated
+        ):
+            raise AuthenticationFailed()
         instance = get_object_or_404(
             self.queryset,
             username=(
@@ -32,13 +39,29 @@ class UserViewSet(DjoserUserViewSet):
     @action(["GET"], True)
     def enrolled_contests(self, request: Request, username):
         user = self.get_object()
-        serializer = ContestSerializer(user.enrolled_contests, many=True)
+        contests = [
+            contest
+            for contest in user.enrolled_contests.all()
+            if contest.end_time >= timezone.now()
+        ]
+        serializer = ContestSerializer(contests, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(["GET"], True)
     def created_contests(self, request: Request, username):
         user = self.get_object()
         serializer = ContestSerializer(user.created_contests, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(["GET"], True)
+    def past_contests(self, request: Request, username):
+        user = self.get_object()
+        contests = [
+            contest
+            for contest in user.enrolled_contests.all()
+            if contest.end_time < timezone.now()
+        ]
+        serializer = ContestSerializer(contests, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(["GET"], True)

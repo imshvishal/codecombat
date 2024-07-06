@@ -14,7 +14,7 @@ class Contest(models.Model):
         on_delete=models.CASCADE,
         related_name="created_contests",
     )
-    contest_code = models.CharField(unique=True, max_length=15, null=True)
+    contest_code = models.CharField(unique=True, max_length=15, null=True, blank=True)
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True)
     cover_image = models.ImageField(null=True, blank=True, upload_to="contest_cover")
@@ -33,20 +33,24 @@ class Contest(models.Model):
     def __str__(self) -> str:
         return f"{self.title}"
 
-    def save(self, *args, **kwargs):
-        if not self.contest_code:
-            # include this ca still get into Not Unique error
+    def save(self, *args, **kwargs):  # include this ca still get into Not Unique error
+        while not self.contest_code or (
+            (contest := Contest.objects.filter(contest_code=self.contest_code)).exists()
+            and contest.last().id != self.id
+        ):
             uid = uuid.uuid4().hex
             self.contest_code = uid[:4] + uid[-5:]
         return super().save(*args, **kwargs)
 
     @property
     def is_live(self):
-        return (
-            self.start_time <= timezone.now() <= self.start_time + self.contest_time()
-        )
+        return self.start_time <= timezone.now() <= self.end_time
 
-    @lru_cache
+    @property
+    def end_time(self):
+        return self.start_time + self.contest_time()
+
+    # TODO:@lru_cache
     def contest_time(self):
         timediff = timedelta()
         for question in self.questions.all():

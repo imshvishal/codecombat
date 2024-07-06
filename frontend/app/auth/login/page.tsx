@@ -20,18 +20,20 @@ import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useDisclosure } from "@nextui-org/modal";
-import EmailModal from "./modal";
+import { EmailModal, EmailType } from "./modal";
 
 const loginSchema = z.object({
   username: z
     .string()
     .min(3, { message: "Minimum length should be 3" })
-    .regex(/^[a-zA-Z0-9]+$/, { message: "Please enter a valid username" }),
+    .regex(/^[a-z0-9\_]+$/, {
+      message: "Username should be alphanumeric and lowercase",
+    }),
   password: z.string().min(1, { message: "Please enter a password" }),
 });
 
 const LoginPage = () => {
-  // const params = useSearchParams();
+  const params = useSearchParams();
   const isAuthenticated = useSelector(
     (state: any) => state.auth.isAuthenticated
   );
@@ -39,6 +41,11 @@ const LoginPage = () => {
   const { toast } = useToast();
   const dispatch = useDispatch();
   const navigator = useNavigation();
+  const [modalState, setModalState] = useState({
+    email: "",
+    isOpen: false,
+    type: EmailType.USER_ACTIVATION,
+  });
   const form = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -48,21 +55,17 @@ const LoginPage = () => {
   });
   useEffect(() => {
     if (isAuthenticated) {
-      // navigator.push(params.get("next") || "/");
-      navigator.push("/");
+      navigator.push(params.get("next") || "/");
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated]);
 
-
-
-  async function handleSubmit(values: z.infer<typeof loginSchema>) {
+  async function handleLoginSubmit(values: z.infer<typeof loginSchema>) {
     try {
       const data = await loginApi(values).unwrap();
       dispatch(login(data));
       toast({
-        title: "Login successful",
+        title: "Login Successfull",
         description: "Welcome to CodeCombat!",
-        color: "success",
       });
     } catch (error) {
       toast({
@@ -76,7 +79,7 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="md:w-1/2 lg:w-1/5 w-full flex flex-col gap-6">
+    <div className="px-8 md:px-0 md:w-1/2 lg:w-1/5 w-full flex flex-col gap-6">
       <h1 className={title({ size: "sm" })}>Login</h1>
       <h2 className={subtitle({ class: "mb-4 text-slate-500" })}>
         Please login to continue!
@@ -84,7 +87,7 @@ const LoginPage = () => {
       <Form {...form}>
         <form
           className="flex flex-col gap-6 mb-2"
-          onSubmit={form.handleSubmit(handleSubmit)}
+          onSubmit={form.handleSubmit(handleLoginSubmit)}
         >
           <FormField
             control={form.control}
@@ -125,13 +128,14 @@ const LoginPage = () => {
             size="lg"
             type="submit"
             variant="flat"
-            color="success"
             isLoading={isLoading}
+            color="primary"
           >
             Login
           </Button>
         </form>
       </Form>
+      <EmailModal state={modalState} setModalState={setModalState} />
       <Dropdown>
         <DropdownTrigger as="button">
           <p className="text-slate-500 text-sm text-end cursor-pointer">
@@ -139,9 +143,39 @@ const LoginPage = () => {
           </p>
         </DropdownTrigger>
         <DropdownMenu aria-label="Static Actions">
-          <DropdownItem>Reset username!</DropdownItem>
-          <DropdownItem>Reset password!</DropdownItem>
-          <DropdownItem>Activate User!</DropdownItem>
+          <DropdownItem
+            onClick={() => {
+              setModalState({
+                ...modalState,
+                type: EmailType.RESET_USERNAME,
+                isOpen: true,
+              });
+            }}
+          >
+            Reset username!
+          </DropdownItem>
+          <DropdownItem
+            onClick={() => {
+              setModalState({
+                ...modalState,
+                type: EmailType.RESET_PASSWORD,
+                isOpen: true,
+              });
+            }}
+          >
+            Reset password!
+          </DropdownItem>
+          <DropdownItem
+            onClick={() => {
+              setModalState({
+                ...modalState,
+                type: EmailType.USER_ACTIVATION,
+                isOpen: true,
+              });
+            }}
+          >
+            Activate User!
+          </DropdownItem>
         </DropdownMenu>
       </Dropdown>
     </div>

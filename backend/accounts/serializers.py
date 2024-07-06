@@ -1,28 +1,13 @@
 from collections import OrderedDict
+from dataclasses import fields
 from os import getenv
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
+from djoser.serializers import UserCreatePasswordRetypeSerializer
 from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.tokens import Token
 
 from .models import User
-
-
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user) -> Token:
-        token = super().get_token(user)
-        token["username"] = user.username
-        token["name"] = f"{user.first_name} {user.last_name}".strip()
-        token["email"] = user.email
-        token["is_superuser"] = user.is_superuser
-        token["is_staff"] = user.is_staff
-        token["user_type"] = user.user_type
-        if user.avatar:
-            token["avatar"] = user.avatar.url
-        return token
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -43,8 +28,13 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_avatar(self, obj):
-        if obj and obj.avatar:
-            return getenv("BACKEND_DOMAIN") + obj.avatar.url
+        if obj and obj.is_authenticated and obj.avatar:
+            url = obj.avatar.url
+            return (
+                getenv("BACKEND_DOMAIN") + url
+                if url.startswith("/")
+                else obj.avatar.url
+            )
         return None
 
     def validate(self, attrs: OrderedDict):

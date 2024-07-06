@@ -1,6 +1,5 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
-import Link from "next/link";
 import clsx from "clsx";
 
 import { Providers } from "./providers";
@@ -36,9 +35,7 @@ export default function RootLayout({
 }) {
   return (
     <html suppressHydrationWarning lang="en">
-      <head>
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.4.0/styles/github-dark.min.css"></link>
-      </head>
+      <head/>
       <body
         className={clsx(
           "min-h-screen bg-background font-sans antialiased",
@@ -47,28 +44,12 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-          <div className="flex flex-col h-screen justify-center items-center">
+          <div className="flex flex-col h-screen">
             <Navbar />
-            <main className="flex flex-grow justify-center items-center flex-col w-full px-8">
+            <main className="flex flex-grow justify-center items-center flex-col w-full">
               {children}
             </main>
-            <Toaster />
-            <footer className="w-full flex items-center justify-center py-3">
-              <Link
-              target="_blank"
-                className="flex items-center gap-1 text-current"
-                href={siteConfig.links.github}
-                title="Vishal"
-              >
-                <span className="text-default-600 flex flex-row">
-                  {/* Made with &nbsp;
-                  <HeartFilledIcon color="red" />
-                  &nbsp; in */}
-                  Shut the Fuck Up! I am not a &nbsp;<p className="text-success"> frontend developer.</p>
-                </span>
-                {/* <p className="text-success">India</p> */}
-              </Link>
-            </footer>
+            <Toaster/>
           </div>
         </Providers>
       </body>
