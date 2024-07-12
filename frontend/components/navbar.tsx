@@ -14,7 +14,7 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-  DropdownSection
+  DropdownSection,
 } from "@nextui-org/dropdown";
 import { Button } from "@nextui-org/button";
 import Link from "next/link";
@@ -28,11 +28,9 @@ import { Avatar } from "@nextui-org/avatar";
 import { useDispatch, useSelector } from "react-redux";
 import { useLogoutMutation } from "@/redux/api/endpoints/authApi";
 import { useRouter } from "next/navigation";
-import { login, logout } from "@/redux/states/authStateSlice";
+import { logout } from "@/redux/states/authStateSlice";
 import { useState } from "react";
 import { processImageUrl } from "@/lib/utils";
-import { Input } from "@nextui-org/input";
-import { useLazyGetUserQuery } from "@/redux/api/endpoints/userApi";
 
 const UserProfileDropdown = ({
   children,

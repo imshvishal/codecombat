@@ -18,6 +18,10 @@ from .permissions import UserPermission
 
 class UserViewSet(DjoserUserViewSet):
     permission_classes = [IsAdminUser | UserPermission]
+    serializer_class = UserSerializer
+
+    def get_serializer_context(self):
+        return super().get_serializer_context() | {"request": self.request}
 
     def get_object(self):
         if (
@@ -41,16 +45,22 @@ class UserViewSet(DjoserUserViewSet):
         user = self.get_object()
         contests = [
             contest
-            for contest in user.enrolled_contests.all()
+            for contest in user.enrolled_contests.all().order_by("-start_time")
             if contest.end_time >= timezone.now()
         ]
-        serializer = ContestSerializer(contests, many=True)
+        serializer = ContestSerializer(
+            contests, many=True, context={"request": request}
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(["GET"], True)
     def created_contests(self, request: Request, username):
         user = self.get_object()
-        serializer = ContestSerializer(user.created_contests, many=True)
+        serializer = ContestSerializer(
+            user.created_contests.all().order_by("-created_at"),
+            many=True,
+            context={"request": request},
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(["GET"], True)
@@ -61,7 +71,9 @@ class UserViewSet(DjoserUserViewSet):
             for contest in user.enrolled_contests.all()
             if contest.end_time < timezone.now()
         ]
-        serializer = ContestSerializer(contests, many=True)
+        serializer = ContestSerializer(
+            contests, many=True, context={"request": request}
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(["GET"], True)
@@ -75,6 +87,8 @@ class UserViewSet(DjoserUserViewSet):
         if question:
             filter_kwargs["question"] = question
         serializer = SubmissionSerializer(
-            user.submissions.filter(**filter_kwargs), many=True
+            user.submissions.filter(**filter_kwargs),
+            many=True,
+            context={"request": request},
         )
         return Response(serializer.data, status=status.HTTP_200_OK)

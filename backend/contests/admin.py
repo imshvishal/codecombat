@@ -1,5 +1,6 @@
-from contests.models import Contest, Question, Submission, TestCase
 from django.contrib import admin
+
+from contests.models import AttemptStatus, Contest, Question, Submission, TestCase
 
 
 class TestCaseInline(admin.TabularInline):
@@ -41,3 +42,8 @@ from django.contrib import messages
 class SubmissionAdmin(admin.ModelAdmin):
     list_display = ("id", "__str__", "success", "user")
     list_display_links = ("id", "__str__")
+
+
+@admin.register(AttemptStatus)
+class AttemptStatusAdmin(admin.ModelAdmin):
+    pass

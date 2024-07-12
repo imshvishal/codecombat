@@ -1,7 +1,7 @@
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.request import Request
 
-from .models import Contest, Question
+from .models import Contest, Question, Submission
 
 
 class ContestPermission(BasePermission):
@@ -84,8 +84,17 @@ class SubmissionPermission(BasePermission):
         return True
 
     def has_object_permission(self, request: Request, view, obj):
-        if request.method not in SAFE_METHODS:
+        if view.action == "delete":
             return False
+        if request.method not in SAFE_METHODS:
+            return (
+                False
+                if isinstance(obj, Submission)
+                else obj.question.contest.is_live
+                and obj.question.contest.enrolled_users.filter(
+                    pk=request.user.id
+                ).exists()
+            )
         return (
             obj.question.contest.organizer == request.user
             or obj.question.contest.enrolled_users.filter(pk=request.user.id).exists()

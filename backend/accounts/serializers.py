@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from dataclasses import fields
 from os import getenv
+from urllib import request
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
@@ -28,10 +29,11 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_avatar(self, obj):
+        request = self.context.get("request")
         if obj and obj.is_authenticated and obj.avatar:
             url = obj.avatar.url
             return (
-                getenv("BACKEND_DOMAIN") + url
+                f"{request.scheme}://{request.get_host()}" + url
                 if url.startswith("/")
                 else obj.avatar.url
             )

@@ -15,9 +15,10 @@ from accounts.models import User
 from accounts.serializers import UserSerializer
 
 from .code_executor import CodeExecutor
-from .models import Contest, Question, Submission
+from .models import AttemptStatus, Contest, Question, Submission, TestCase
 from .permissions import ContestPermission, QuestionPermission, SubmissionPermission
 from .serializers import (
+    AttemptStatusSerializer,
     ContestCreateSerializer,
     ContestSerializer,
     LeaderBoardSerializer,
@@ -51,6 +52,15 @@ class CustomModelViewSet(ModelViewSet):
     def perform_update(self, serializer):
         self.perform_create_or_update(serializer)
 
+    def get_serializer_context(self):
+        return super().get_serializer_context() | {"request": self.request}
+
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
 
 # Create your views here.
 class ContestViewSet(CustomModelViewSet):
@@ -59,28 +69,42 @@ class ContestViewSet(CustomModelViewSet):
     queryset = Contest.objects.all()
     permission_classes = [IsAdminUser | ContestPermission]
 
-    def create(self, request, *args, **kwargs):
-        print(request.data["questions"])
-        print(request.FILES)
-        return super().create(request, *args, **kwargs)
-
     def perform_create_or_update(self, serializer):
         contest = serializer.save()
-        questions = self.request.data.get("questions", [])
+        questions = self.request.data.get("questions", "[]")
         for question_data in json.loads(questions):
+            question_id = question_data.get("id")
+            if question_id:
+                question_instance = Question.objects.get(id=question_id)
+                question_serializer = QuestionSerializer(
+                    question_instance,
+                    data=question_data,
+                    partial=True,
+                )
+            else:
+                question_serializer = QuestionSerializer(
+                    data=question_data | {"contest": contest.id}
+                )
 
-            question_serializer = QuestionSerializer(
-                data=question_data | {"contest": contest.id}
-            )
             question_serializer.is_valid(raise_exception=True)
             question = question_serializer.save()
             testcases = question_data.get("testcases", [])
             for testcase_data in testcases:
-                testcase_serializer = TestCaseSerializer(
-                    data=testcase_data | {"question": question.id}
-                )
+                testcase_id = testcase_data.get("id")
+                if testcase_id:
+                    testcase_instance = TestCase.objects.get(id=testcase_id)
+                    testcase_serializer = TestCaseSerializer(
+                        testcase_instance,
+                        data=testcase_data,
+                        partial=True,
+                    )
+                else:
+                    testcase_serializer = TestCaseSerializer(
+                        data=testcase_data | {"question": question.id}
+                    )
+
                 testcase_serializer.is_valid(raise_exception=True)
-                testcase_serializer.save()
+                testcase = testcase_serializer.save()
 
     @action(["get"], detail=True)
     def register(self, request, contest_code):
@@ -132,7 +156,9 @@ class ContestViewSet(CustomModelViewSet):
     @action(["get"], detail=True)
     def approved_users(self, request: Request, contest_code):
         contest = get_object_or_404(Contest, contest_code=contest_code)
-        serializer = UserSerializer(contest.enrolled_users, many=True)
+        serializer = UserSerializer(
+            contest.enrolled_users, many=True, context={"request": request}
+        )
         return Response(serializer.data, status=200)
 
     @action(["get"], detail=True)
@@ -203,9 +229,6 @@ class SubmissionViewSet(CustomModelViewSet):
     serializer_class = SubmissionSerializer
     permission_classes = [IsAdminUser | (IsAuthenticated & SubmissionPermission)]
 
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
-
     @action(methods=["post"], detail=False)
     def run(self, request, *args, **kwargs):
         data = request.data | {"user": request.user.id}
@@ -222,8 +245,16 @@ class SubmissionViewSet(CustomModelViewSet):
                 )
         else:
             return Response(submission.errors)
+        print(submission.validated_data)
         with CodeExecutor(**submission.validated_data) as executor:
             result = executor.execute()
             if isinstance(submission, self.get_serializer_class()):
                 submission.save(success=result.get("success", False))
             return Response(result, 200)
+
+
+class AttemptStatusViewSet(CustomModelViewSet):
+    queryset = AttemptStatus.objects.all()
+    serializer_class = AttemptStatusSerializer
+    permission_classes = [IsAdminUser | (IsAuthenticated)]
+    #! Add permission for AttemptUpdation

@@ -27,7 +27,6 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-BACKEND_DOMAIN = getenv("BACKEND_DOMAIN", "localhost:8000")
 DOMAIN = getenv("FRONTEND_DOMAIN", "localhost:3000")
 
 SITE_NAME = "CodeCombat"

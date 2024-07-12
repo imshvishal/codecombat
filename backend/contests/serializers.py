@@ -1,4 +1,5 @@
 from dataclasses import fields
+from urllib import request
 
 from django.conf import settings
 from rest_framework import serializers
@@ -10,7 +11,7 @@ from rest_framework.serializers import (
 
 from accounts.serializers import UserSerializer
 
-from .models import Contest, Question, Submission, TestCase
+from .models import AttemptStatus, Contest, Question, Submission, TestCase
 
 
 class ContestCreateSerializer(ModelSerializer):
@@ -19,11 +20,72 @@ class ContestCreateSerializer(ModelSerializer):
         exclude = ("pending_users",)
 
 
+class TestCaseSerializer(ModelSerializer):
+    class Meta:
+        model = TestCase
+        fields = "__all__"
+
+
+class AttemptStatusSerializer(ModelSerializer):
+
+    class Meta:
+        model = AttemptStatus
+        fields = "__all__"
+
+
+class QuestionSerializer(ModelSerializer):
+    testcases = SerializerMethodField()
+    submission = SerializerMethodField()
+    attempt_status = SerializerMethodField()
+
+    def __init__(self, *args, **kwargs):
+        depth = kwargs.pop("depth", 1)
+        self.Meta.depth = int(depth)
+        super().__init__(*args, **kwargs)
+
+    class Meta:
+        model = Question
+        fields = "__all__"
+
+    def get_attempt_status(self, question):
+        return (
+            AttemptStatusSerializer(instance).data
+            if (
+                instance := question.attempt_status.filter(
+                    user=self.context.get("request").user
+                ).last()
+            )
+            else None
+        )
+
+    def get_submission(self, question):
+        instance = question.submissions.filter(
+            user=self.context.get("request").user, success=True
+        ).last()
+        return SubmissionSerializer(instance).data if instance else None
+
+    def get_testcases(self, question):
+        request = self.context.get("request")
+        testcases = question.testcases.all()
+        testcase_serialized_data = TestCaseSerializer(
+            testcases, many=True, context=self.context.copy() | {"request": request}
+        ).data
+        if request and request.user == question.contest.organizer:
+            return testcase_serialized_data
+        else:
+            return (
+                testcase_serialized_data
+                if self.get_submission(question)
+                else testcases.count()
+            )
+
+
 class ContestSerializer(ContestCreateSerializer):
     organizer = UserSerializer()
     cover_image = SerializerMethodField()
     is_live = SerializerMethodField()
     end_time = SerializerMethodField()
+    questions = SerializerMethodField()
 
     class Meta:
         model = Contest
@@ -37,35 +99,39 @@ class ContestSerializer(ContestCreateSerializer):
         return contest.is_live
 
     def get_cover_image(self, contest):
+        request = self.context.get("request")
         if contest.cover_image:
             url = contest.cover_image.url
             return (
-                settings.BACKEND_DOMAIN + url
+                f"{request.scheme}://{request.get_host()}" + url
                 if url.startswith("/")
                 else contest.cover_image.url
             )
         return None
 
-
-class QuestionSerializer(ModelSerializer):
-    testcases = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Question
-        fields = "__all__"
-
-    def get_testcases(self, question):
-        testcases = question.testcases.all().count()
-        return testcases
-
-
-class TestCaseSerializer(ModelSerializer):
-    class Meta:
-        model = TestCase
-        fields = "__all__"
+    def get_questions(self, contest):
+        request = self.context.get("request")
+        questions = contest.questions.all()
+        if (
+            request
+            and request.user == contest.organizer
+            or (
+                contest.is_live
+                and contest.enrolled_users.filter(pk=request.user.id).exists()
+            )
+        ):
+            return QuestionSerializer(
+                questions,
+                many=True,
+                context=self.context.copy() | {"request": request},
+                depth=0,
+            ).data
+        else:
+            return questions.count()
 
 
 class SubmissionSerializer(ModelSerializer):
+
     class Meta:
         model = Submission
         fields = "__all__"

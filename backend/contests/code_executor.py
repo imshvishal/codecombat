@@ -53,10 +53,12 @@ try:
     images = list(map(lambda image: image.tags[0], client.images.list()))
     for key, value in lang_configs.items():
         if value.image not in images:
+            print("[INFO]", "Pulling image...", value.image)
             client.images.pull(value.image)
+    print("[INFO]", "Docker is active.")
 except:
     print("[ERROR]", "Docker is not active.")
-    # exit(1)
+    exit(1)
 
 
 class CodeExecutor:
@@ -90,12 +92,12 @@ class CodeExecutor:
         result = {}
         if (compile_status := self.compile_status) and compile_status.exit_code:
             self.__output = compile_status.output
-            result["error"] = "Compile Error"
+            result["error"] = "Compilation Error!"
         else:
             test_check = self.__run_code()
             if test_check:
                 result["testcases"] = test_check
-                result["success"] = all(test_check.values())
+            result["success"] = all(test_check.values())
         result["output"] = self.output
         result["message"] = self.status_msg
         return result
@@ -131,7 +133,8 @@ class CodeExecutor:
                     .replace(_input.replace("\n", "\r\n").encode(), b"", 1)
                     .decode()
                 )
-            if self.__strip_multi_line(testcase.output.strip()) == _output:
+                print(_output)
+            if self.__strip_multi_line(testcase.output) == _output:
                 self.__output += b"Passed\n"
                 testcase_check.update({i: True})
             else:

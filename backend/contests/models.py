@@ -33,7 +33,7 @@ class Contest(models.Model):
     def __str__(self) -> str:
         return f"{self.title}"
 
-    def save(self, *args, **kwargs):  # include this ca still get into Not Unique error
+    def save(self, *args, **kwargs):
         while not self.contest_code or (
             (contest := Contest.objects.filter(contest_code=self.contest_code)).exists()
             and contest.last().id != self.id
@@ -108,3 +108,15 @@ class Submission(models.Model):
 
     def __str__(self) -> str:
         return f"{self.question}"
+
+
+class AttemptStatus(models.Model):
+    user = models.ForeignKey(
+        to=User, on_delete=models.CASCADE, related_name="attempt_status"
+    )
+    question = models.ForeignKey(
+        to=Question, on_delete=models.CASCADE, related_name="attempt_status"
+    )
+    duration = models.DurationField()
+    code = models.TextField(blank=True)
+    language = models.CharField(max_length=15)

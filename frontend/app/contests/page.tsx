@@ -19,7 +19,13 @@ import { useSelector } from "react-redux";
 import { Card, CardHeader, CardBody, CardFooter } from "@nextui-org/card";
 import { Divider, Image } from "@nextui-org/react";
 import { ScrollShadow } from "@nextui-org/react";
-import { AtSignIcon, Clock4Icon, Plus } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowRightCircle,
+  AtSignIcon,
+  Clock4Icon,
+  Plus,
+} from "lucide-react";
 import Link from "next/link";
 import { useVerifyMutation } from "@/redux/api/endpoints/authApi";
 import { useProtected } from "@/redux/hooks/use-protected";
@@ -78,7 +84,7 @@ const Contests = ({
                       <span className="flex gap-1">
                         <Clock4Icon size={12} />
                         <p className="text-tiny -mt-0.5">
-                          {contest.start_time}
+                          {new Date(contest.start_time).toLocaleString("en-IN")}
                         </p>
                       </span>
                     </div>
@@ -89,8 +95,10 @@ const Contests = ({
                     color="primary"
                     radius="full"
                     size="sm"
+                    title="View Contest"
                   >
-                    See Contest Details
+                    Go
+                    <ArrowRight size={15} />
                   </Button>
                 </CardFooter>
               </Card>
@@ -174,16 +182,18 @@ const ContestsPage = () => {
             </Button>
           </form>
         </div>
-        <Button
-          as={Link}
-          href="/contests/create"
-          variant="flat"
-          className="w-full sm:w-max"
-          color="primary"
-        >
-          <Plus />
-          Create Contest
-        </Button>
+        {user?.user_type == "ORG" ? (
+          <Button
+            as={Link}
+            href="/contests/create"
+            variant="flat"
+            className="w-full sm:w-max"
+            color="primary"
+          >
+            <Plus />
+            Create Contest
+          </Button>
+        ) : null}
       </div>
     </div>
   );

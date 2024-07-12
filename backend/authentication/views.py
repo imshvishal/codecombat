@@ -68,7 +68,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             token = AccessToken(access_token)
             user = token.payload.get("user_id")
             user_object = User.objects.get(pk=user)
-            user_serializer = UserSerializer(user_object)
+            user_serializer = UserSerializer(user_object, context={"request": request})
             response.data = user_serializer.data
         return response
 

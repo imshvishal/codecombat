@@ -13,7 +13,7 @@ import { Toaster } from "@/components/ui/toaster";
 export const metadata: Metadata = {
   title: {
     default: siteConfig.name,
-    template: '%s - ${siteConfig.name}',
+    template: "%s - ${siteConfig.name}",
   },
   description: siteConfig.description,
   icons: {
@@ -35,21 +35,21 @@ export default function RootLayout({
 }) {
   return (
     <html suppressHydrationWarning lang="en">
-      <head/>
+      <head />
       <body
         className={clsx(
           "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable,
+          fontSans.variable
         )}
         suppressHydrationWarning={true}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <div className="flex flex-col h-screen">
             <Navbar />
-            <main className="flex flex-grow justify-center items-center flex-col w-full">
+            <main className="flex flex-grow justify-center items-center flex-col w-full text-center">
               {children}
             </main>
-            <Toaster/>
+            <Toaster />
           </div>
         </Providers>
       </body>
