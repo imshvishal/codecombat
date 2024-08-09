@@ -12,12 +12,12 @@ export function processImageUrl(imageUrl: string, width = 100, height = 100) {
   return imageUrl;
 }
 
-function timeToSeconds(time: string) {
+function durationToSeconds(time: string) {
   const [hours, minutes, seconds] = time.split(":").map(Number);
   return hours * 3600 + minutes * 60 + seconds;
 }
 
-function secondsToTime(seconds: number) {
+function secondsToDuration(seconds: number) {
   const hours = Math.floor(seconds / 3600)
     .toString()
     .padStart(2, "0");
@@ -30,21 +30,13 @@ function secondsToTime(seconds: number) {
 }
 
 export function subtractDuration(time1: string, time2: string) {
-  const time1InSeconds = timeToSeconds(time1);
-  const time2InSeconds = timeToSeconds(time2);
+  const time1InSeconds = durationToSeconds(time1);
+  const time2InSeconds = durationToSeconds(time2);
   const differenceInSeconds = time1InSeconds - time2InSeconds;
-  return secondsToTime(differenceInSeconds);
+  return secondsToDuration(differenceInSeconds);
 }
 
 export function timeDifference(endTime: number, startTime: number) {
   let diff = endTime - startTime;
-  // const hours = Math.floor(diff / (1000 * 60 * 60));
-  // const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  // const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-  // const formattedHours = String(hours).padStart(2, "0");
-  // const formattedMinutes = String(minutes).padStart(2, "0");
-  // const formattedSeconds = String(seconds).padStart(2, "0");
-
-  // return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
-  return secondsToTime(diff / 1000);
+  return secondsToDuration(diff / 1000);
 }

@@ -8,12 +8,14 @@ const MonacoEditor = ({
   onChange,
   defaultValue,
   isDisabled,
+  onLoad,
 }: {
   language: string;
   allowAutoComplete: boolean;
   onChange: any;
   defaultValue?: string;
   isDisabled?: boolean;
+  onLoad: any;
 }) => {
   const { theme } = useTheme();
   const editorRef = useRef(null);
@@ -35,6 +37,7 @@ const MonacoEditor = ({
   };
   const handleEditorDidMount = (editor: any, monaco: Monaco) => {
     editorRef.current = editor;
+    onLoad();
   };
 
   return (

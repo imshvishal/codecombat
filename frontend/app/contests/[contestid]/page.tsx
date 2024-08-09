@@ -3,7 +3,19 @@ import { subtitle, title } from "@/components/primitives";
 import { useLazyGetContestQuery, useLazyRegisterContestQuery, useLazyDeregisterContestQuery } from "@/redux/api/endpoints/contestApi";
 import { Button, Card, CardBody, CardHeader, Chip, Image, Spinner } from "@nextui-org/react";
 import { QueryStatus } from "@reduxjs/toolkit/query";
-import { ArrowLeft, ArrowRight, ArrowRightCircle, CheckCircle, Edit, Edit2, Edit2Icon, Pencil } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowRightCircle,
+  CheckCircle,
+  Edit,
+  Edit2,
+  Edit2Icon,
+  Pencil,
+  Share2Icon,
+  Trash2,
+  UserPlus2Icon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -16,9 +28,19 @@ const ContestPage = ({ params }: { params: { contestid: string } }) => {
   const [getContest, { data: contest, isLoading, error, status }] = useLazyGetContestQuery();
   const [registerContest, { isLoading: regIsLoading, error: regError, status: regStatus }] = useLazyRegisterContestQuery();
   const [deregisterContest, { isLoading: deregIsLoading, error: deregError, status: deregStatus }] = useLazyDeregisterContestQuery();
+  const [userIsPending, setUserIsPending] = useState(false);
+  const [userIsEnrolled, setUserIsEnrolled] = useState(false);
+
   useEffect(() => {
-    getContest(contestCode).then((data) => console.log(data));
-  }, [getContest]);
+    getContest(contestCode)
+      .unwrap()
+      .then((contest) => {
+        console.log(contest);
+
+        setUserIsEnrolled(contest.enrolled_users.filter((en_user: any) => en_user.id == user?.id).length > 0);
+        setUserIsPending(contest.pending_users.filter((en_user: any) => en_user.id == user?.id).length > 0);
+      });
+  }, []);
   const [time, setTime] = useState("");
   let start_time = Date.parse(contest?.start_time);
   let end_time = Date.parse(contest?.end_time);
@@ -55,7 +77,7 @@ const ContestPage = ({ params }: { params: { contestid: string } }) => {
       ) : !contest ? (
         <p className={title()}>No contest found: {contestCode}</p>
       ) : (
-        <div className="h-full w-full md:w-2/3 my-10 px-5 sm:px-0 flex flex-col items-center sm:items-stretch">
+        <div className="h-full w-full md:w-2/3 mt-10 px-5 sm:px-0 flex flex-col items-center sm:items-stretch">
           <Link href={`/contests`} className="w-max">
             <span className="flex mb-4">
               <ArrowLeft /> &nbsp; Back to Contests
@@ -73,22 +95,59 @@ const ContestPage = ({ params }: { params: { contestid: string } }) => {
                     Login to View
                   </Button>
                 ) : contest.organizer.id == user.id ? (
-                  <Button
-                    className="mt-3"
-                    variant="light"
-                    title="Edit Contest"
-                    isIconOnly
-                    as={Link}
-                    color="primary"
-                    href={`/contests/${params.contestid}/edit`}
-                  >
-                    <Edit />
-                  </Button>
+                  <div>
+                    <Button
+                      className="mt-3"
+                      variant="light"
+                      title="Share Contest"
+                      isIconOnly
+                      color="primary"
+                      onClick={() => {
+                        alert("Not Implemented!");
+                      }}
+                    >
+                      <Share2Icon />
+                    </Button>
+                    <Button
+                      className="mt-3"
+                      variant="light"
+                      title="Check Pending and Enrolled users"
+                      isIconOnly
+                      as={Link}
+                      color="primary"
+                      href={`/contests/${params.contestid}/users`}
+                    >
+                      <UserPlus2Icon />
+                    </Button>
+                    <Button
+                      className="mt-3"
+                      variant="light"
+                      title="Edit Contest"
+                      isIconOnly
+                      as={Link}
+                      color="primary"
+                      href={`/contests/${params.contestid}/edit`}
+                    >
+                      <Edit />
+                    </Button>
+                    <Button
+                      className="mt-3"
+                      variant="light"
+                      title="Delete Contest"
+                      isIconOnly
+                      color="danger"
+                      onClick={() => {
+                        alert("Not Implemented!");
+                      }}
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
                 ) : Date.now() < start_time ? (
-                  contest.enrolled_users.includes(user.id) || contest.pending_users.includes(user.id) ? (
+                  userIsEnrolled || userIsPending ? (
                     <>
-                      <Chip className="-mb-3 z-10" size="sm" color={contest.enrolled_users.includes(user.id) ? "success" : "warning"}>
-                        {contest.enrolled_users.includes(user.id) ? "Enrolled" : "Pending"}
+                      <Chip className="-mb-3 z-10" size="sm" color={userIsEnrolled ? "success" : "warning"}>
+                        {userIsEnrolled ? "Enrolled" : "Pending"}
                       </Chip>
                       <Button
                         variant="bordered"
@@ -120,17 +179,14 @@ const ContestPage = ({ params }: { params: { contestid: string } }) => {
                       Register
                     </Button>
                   )
-                ) : Date.now() <= end_time ? (
-                  <Button className="mt-3" as={Link} variant="bordered" color="primary" href={`/contests/${params.contestid}`}>
-                    Start Contest
-                  </Button>
                 ) : null}
               </div>
             </div>
           </div>
           <div className="text-center sm:text-left mb-10" dangerouslySetInnerHTML={{ __html: contest.description }} />
+
           {contest.questions.length > 0 ? <p className={title({ size: "sm" })}>Questions:</p> : null}
-          <div>
+          <div className="w-[50%]">
             {typeof contest.questions == "object"
               ? contest.questions.map((question: any, qIndex: number) => (
                   <Card key={qIndex} className="my-5" radius="lg">

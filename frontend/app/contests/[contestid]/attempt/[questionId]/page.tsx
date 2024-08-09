@@ -24,10 +24,11 @@ const AttemptQuestionPage = ({ params }: { params: { questionId: string; contest
   const user = useSelector((state: any) => state.auth.user);
   const languages = ["python", "javascript", "c", "cpp", "java"];
   const [language, setLanguage] = useState("");
+  const [editorLoaded, setEeditorLoaded] = useState(false);
   const [timer, setTimer] = useState("");
   const timerRef = useRef("");
   const code = useRef("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [isAttempted, setIsAttempted] = useState(false);
   const [createSubmission, { isLoading: isCreatingSubmission, data: submissionData }] = useCreateSubmissionMutation();
   const [createAttemptStatus, { isLoading: isCreatingStatus, error: createError, data: statusData }] = useCreateAttemptStatusMutation();
@@ -35,19 +36,20 @@ const AttemptQuestionPage = ({ params }: { params: { questionId: string; contest
   const [getQuestion, { data: question, isLoading: questionIsLoading, error: questionError, isError: questionIsError }] = useLazyGetQuestionQuery();
 
   useEffect(() => {
-    getQuestion(params.questionId).unwrap();
-    if (!question) return;
-    console.log(question);
-    setTimer(question.attempt_status?.duration || question?.duration);
-    setIsSubmitted(!!question.submission);
-    setLanguage(question.submission?.lang || question.attempt_status?.lang || localStorage.getItem("pref_lang") || "python");
-    setIsAttempted(!!question.attempt_status);
-    code.current = question.submission?.code || question.attempt_status?.code || "";
-  }, [question]);
+    getQuestion(params.questionId)
+      .unwrap()
+      .then((question) => {
+        console.log(question);
+        //TODO? Add left time of contest if the current time of the question is less than the end time of contest
+        setTimer(question.attempt_status?.duration || question?.duration);
+        setIsSubmitted(!!question.submission);
+        setLanguage(question.submission?.lang || question.attempt_status?.lang || localStorage.getItem("pref_lang") || "python");
+        setIsAttempted(!!question.attempt_status);
+        code.current = question.submission?.code || question.attempt_status?.code || "";
+      });
+  }, []);
 
   useEffect(() => {
-    if (!question) return;
-
     const attemptInterval = setInterval(() => {
       if (!isSubmitted) {
         if (!isAttempted) {
@@ -64,7 +66,7 @@ const AttemptQuestionPage = ({ params }: { params: { questionId: string; contest
             });
         } else {
           updateAttemptStatus({
-            id: question.attempt_status?.id || statusData.id,
+            id: question.attempt_status?.id || statusData?.id,
             duration: timerRef.current,
             code: code.current,
             language,
@@ -76,7 +78,11 @@ const AttemptQuestionPage = ({ params }: { params: { questionId: string; contest
   }, [question, isAttempted, isSubmitted, statusData, language]);
 
   useEffect(() => {
-    if (!timer) return;
+    if (!timer || !editorLoaded) return;
+    if (timer == "00:00:00") {
+      return setIsSubmitted(true);
+    }
+
     const timerInterval = setInterval(() => {
       if (isSubmitted) return clearInterval(timerInterval);
       const regex = /^(\d{2}):(\d{2}):(\d{2})$/;
@@ -96,16 +102,27 @@ const AttemptQuestionPage = ({ params }: { params: { questionId: string; contest
         const time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
         timerRef.current = time;
         setTimer(time);
-        if (hours === 0 && minutes === 0 && seconds === 0) {
-          handleSubmission();
+        if (hours == 0 && minutes == 0 && seconds == 0) {
           clearInterval(timerInterval);
+          handleSubmission().then(() => {
+            updateAttemptStatus({
+              id: question.attempt_status?.id || statusData?.id,
+              duration: timerRef.current,
+              code: code.current,
+              language,
+            }).then(() => {
+              setTimeout(() => {
+                router.push(`/contests/${params.contestid}`);
+              }, 3000);
+            });
+          });
         }
       }
     }, 1000);
     return () => clearInterval(timerInterval);
-  }, [timer, isSubmitted]);
+  }, [timer, isSubmitted, editorLoaded, question?.contest]);
 
-  const handleSubmission = () => {
+  const handleSubmission = async () => {
     const duration = subtractDuration(question.duration, timerRef.current);
 
     createSubmission({
@@ -118,6 +135,7 @@ const AttemptQuestionPage = ({ params }: { params: { questionId: string; contest
       .then((res) => {
         if (res.success == true) {
           setIsSubmitted(true);
+          getQuestion(params.questionId).unwrap();
           setTimeout(() => {
             router.push(`/contests/${params.contestid}`);
           }, 3000);
@@ -134,17 +152,17 @@ const AttemptQuestionPage = ({ params }: { params: { questionId: string; contest
       ) : (
         <ResizablePanelGroup direction="horizontal" className="rounded-lg">
           <ResizablePanel defaultSize={30}>
-            <div className="flex h-[92vh] p-8 flex-col text-start gap-5">
+            <div className="flex px-8 py-2 flex-col  h-[92vh] text-start gap-5">
               <span className="text-xl">{question?.title}</span>
-              <ScrollShadow hideScrollBar className="bg-gray-100">
+              <ScrollShadow hideScrollBar>
                 <div dangerouslySetInnerHTML={{ __html: question?.description }} />
               </ScrollShadow>
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={70}>
-            <div className="flex flex-col h-[92vh] gap-2">
-              <div className="flex justify-between w-full px-10 text-2xl">
+            <div className="flex flex-col h-[93vh]">
+              <div className="flex justify-between items-center h-[7vh] w-full px-5 text-2xl">
                 <div className="text-2xl flex items-center gap-2">
                   <Hourglass size={22} />
                   {question?.submission ? `Time Taken: ${question.submission?.duration}` : `Time Left: ${timer}`}
@@ -154,12 +172,14 @@ const AttemptQuestionPage = ({ params }: { params: { questionId: string; contest
                 </div>
                 <Select
                   labelPlacement="outside"
-                  label="&nbsp;"
                   className="max-w-52"
                   placeholder="Language"
                   selectedKeys={[language]}
                   isDisabled={isSubmitted}
-                  onSelectionChange={(languages: any) => setLanguage(languages.currentKey)}
+                  onSelectionChange={(languages: any) => {
+                    localStorage.setItem("pref_lang", languages.currentKey);
+                    setLanguage(languages.currentKey);
+                  }}
                 >
                   {languages.map((lang) => (
                     <SelectItem key={lang} value={lang}>
@@ -175,9 +195,10 @@ const AttemptQuestionPage = ({ params }: { params: { questionId: string; contest
                 defaultValue={code.current}
                 isDisabled={isSubmitted}
                 onChange={(valCode: string) => (code.current = valCode)}
+                onLoad={() => setEeditorLoaded(true)}
               />
               <Divider orientation="horizontal" />
-              <div className="flex justify-between items-center w-full px-5">
+              <div className="flex h-[8vh] justify-between px-5 items-center">
                 <div className="flex gap-2" key={submissionData?.testcases}>
                   {submissionData?.error && (
                     <Chip startContent={<X size={15} />} size="sm" color="danger" variant="flat">
@@ -196,9 +217,9 @@ const AttemptQuestionPage = ({ params }: { params: { questionId: string; contest
                           {isPass ? "Passed" : "Failed"}
                         </Chip>
                       ))
-                    : question?.testcases && isSubmitted
+                    : question?.testcases && question.submission
                     ? question.testcases.map((testcase: any) => (
-                        <Chip startContent={<Check size={15} />} size="sm" color="success" variant="flat">
+                        <Chip startContent={<Check size={15} />} size="sm" color="success" variant="flat" key={testcase.id}>
                           Passed
                         </Chip>
                       ))

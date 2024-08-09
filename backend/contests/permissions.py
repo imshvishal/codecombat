@@ -16,6 +16,7 @@ class ContestPermission(BasePermission):
         if view.action in ["pending_users", "approve_users", "submissions"]:
             return contest and contest.organizer == request.user
         elif view.action in ("register",):
+            print(contest, request.user.is_authenticated)
             return contest and request.user.is_authenticated
         elif view.action == "deregister":
             return (

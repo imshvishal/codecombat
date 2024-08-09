@@ -22,6 +22,7 @@ from .serializers import (
     ContestCreateSerializer,
     ContestSerializer,
     LeaderBoardSerializer,
+    QuestionCreateSerializer,
     QuestionSerializer,
     SubmissionOfNoContestSerializer,
     SubmissionSerializer,
@@ -55,12 +56,6 @@ class CustomModelViewSet(ModelViewSet):
     def get_serializer_context(self):
         return super().get_serializer_context() | {"request": self.request}
 
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
-
-    def partial_update(self, request, *args, **kwargs):
-        return super().partial_update(request, *args, **kwargs)
-
 
 # Create your views here.
 class ContestViewSet(CustomModelViewSet):
@@ -73,19 +68,20 @@ class ContestViewSet(CustomModelViewSet):
         contest = serializer.save()
         questions = self.request.data.get("questions", "[]")
         for question_data in json.loads(questions):
-            question_id = question_data.get("id")
+            question_id = question_data.get("id", None)
+            question_data["contest"] = contest.id
             if question_id:
                 question_instance = Question.objects.get(id=question_id)
+                print(question_instance)
                 question_serializer = QuestionSerializer(
                     question_instance,
                     data=question_data,
                     partial=True,
                 )
+                print(question_serializer)
             else:
-                question_serializer = QuestionSerializer(
-                    data=question_data | {"contest": contest.id}
-                )
-
+                print(2)
+                question_serializer = QuestionCreateSerializer(data=question_data)
             question_serializer.is_valid(raise_exception=True)
             question = question_serializer.save()
             testcases = question_data.get("testcases", [])
@@ -145,11 +141,10 @@ class ContestViewSet(CustomModelViewSet):
     def approve_users(self, request: Request, contest_code):
         contest = get_object_or_404(Contest, contest_code=contest_code)
         users = request.data.get("users", [])
-        for username in users:
-            user = User.objects.get(username=username)
-            if contest.pending_users.filter(id=user.id).exists():
-                contest.pending_users.remove(user)
-                contest.enrolled_users.add(user)
+        for userid in users:
+            if contest.pending_users.filter(id=userid).exists():
+                contest.pending_users.remove(userid)
+                contest.enrolled_users.add(userid)
         contest.save()
         return Response({"detail": "OK"}, status=200)
 
@@ -256,5 +251,4 @@ class SubmissionViewSet(CustomModelViewSet):
 class AttemptStatusViewSet(CustomModelViewSet):
     queryset = AttemptStatus.objects.all()
     serializer_class = AttemptStatusSerializer
-    permission_classes = [IsAdminUser | (IsAuthenticated)]
-    #! Add permission for AttemptUpdation
+    permission_classes = [IsAdminUser | (IsAuthenticated & SubmissionPermission)]

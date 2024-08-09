@@ -1,3 +1,4 @@
+import re
 import tempfile
 import threading
 import time
@@ -42,8 +43,8 @@ lang_configs = {
     "java": LangConfig(
         "amazoncorretto:21-alpine3.18",
         ".java",
-        ["sh", "-c", "javac submitted_code.java"],
-        ["sh", "-c", "java Main"],
+        ["sh", "-c", "javac"],
+        ["sh", "-c", "java"],
     ),
 }
 
@@ -92,6 +93,7 @@ class CodeExecutor:
         result = {}
         if (compile_status := self.compile_status) and compile_status.exit_code:
             self.__output = compile_status.output
+            print(f"{self.__output = }")
             result["error"] = "Compilation Error!"
         else:
             test_check = self.__run_code()
@@ -113,7 +115,11 @@ class CodeExecutor:
 
     def __run_code(self):
         if not ((question := self.question) and question.testcases.all()):
-            exit_code, self.__output = self.container.exec_run(self.config.run_cmd)
+            exit_code, self.__output = self.container.exec_run(
+                self.config.run_cmd
+                if self.language != "java"
+                else (self.config.run_cmd + [self.class_name])
+            )
             return {}
         testcases = self.question.testcases.all()
         testcase_check = {}
@@ -133,7 +139,7 @@ class CodeExecutor:
                     .replace(_input.replace("\n", "\r\n").encode(), b"", 1)
                     .decode()
                 )
-                print(_output)
+                print(f"{_output = }")
             if self.__strip_multi_line(testcase.output) == _output:
                 self.__output += b"Passed\n"
                 testcase_check.update({i: True})
@@ -144,8 +150,22 @@ class CodeExecutor:
 
     def __create_temp_code_file(self):
         self.temp_dir = tempfile.TemporaryDirectory(prefix="codecombat_")
+        if self.language.lower() == "java":
+            self.class_name = re.search(r"class\s+([a-zA-Z_]+)", self.code, re.I).group(
+                1
+            )  #! Might be none
+            print(f"{self.class_name=}")
         with open(
-            self.temp_dir.name + r"\submitted_code" + self.config.ext, "w+"
+            (
+                self.temp_dir.name
+                + (
+                    r"\submitted_code"
+                    if self.language.lower() != "java"
+                    else self.class_name
+                )
+                + self.config.ext
+            ),
+            "w+",
         ) as file:
             file.write(self.code)
 

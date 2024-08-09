@@ -33,51 +33,11 @@ class AttemptStatusSerializer(ModelSerializer):
         fields = "__all__"
 
 
-class QuestionSerializer(ModelSerializer):
-    testcases = SerializerMethodField()
-    submission = SerializerMethodField()
-    attempt_status = SerializerMethodField()
-
-    def __init__(self, *args, **kwargs):
-        depth = kwargs.pop("depth", 1)
-        self.Meta.depth = int(depth)
-        super().__init__(*args, **kwargs)
+class QuestionCreateSerializer(ModelSerializer):
 
     class Meta:
         model = Question
         fields = "__all__"
-
-    def get_attempt_status(self, question):
-        return (
-            AttemptStatusSerializer(instance).data
-            if (
-                instance := question.attempt_status.filter(
-                    user=self.context.get("request").user
-                ).last()
-            )
-            else None
-        )
-
-    def get_submission(self, question):
-        instance = question.submissions.filter(
-            user=self.context.get("request").user, success=True
-        ).last()
-        return SubmissionSerializer(instance).data if instance else None
-
-    def get_testcases(self, question):
-        request = self.context.get("request")
-        testcases = question.testcases.all()
-        testcase_serialized_data = TestCaseSerializer(
-            testcases, many=True, context=self.context.copy() | {"request": request}
-        ).data
-        if request and request.user == question.contest.organizer:
-            return testcase_serialized_data
-        else:
-            return (
-                testcase_serialized_data
-                if self.get_submission(question)
-                else testcases.count()
-            )
 
 
 class ContestSerializer(ContestCreateSerializer):
@@ -86,6 +46,8 @@ class ContestSerializer(ContestCreateSerializer):
     is_live = SerializerMethodField()
     end_time = SerializerMethodField()
     questions = SerializerMethodField()
+    pending_users = UserSerializer(many=True)
+    enrolled_users = UserSerializer(many=True)
 
     class Meta:
         model = Contest
@@ -120,14 +82,59 @@ class ContestSerializer(ContestCreateSerializer):
                 and contest.enrolled_users.filter(pk=request.user.id).exists()
             )
         ):
-            return QuestionSerializer(
+            return QuestionCreateSerializer(
                 questions,
                 many=True,
                 context=self.context.copy() | {"request": request},
-                depth=0,
             ).data
         else:
             return questions.count()
+
+
+class QuestionSerializer(QuestionCreateSerializer):
+    class Meta:
+        model = Question
+        fields = "__all__"
+
+    testcases = SerializerMethodField()
+    submission = SerializerMethodField()
+    attempt_status = SerializerMethodField()
+    contest = SerializerMethodField()
+
+    def get_contest(self, question):
+        return ContestSerializer(question.contest, context=self.context).data
+
+    def get_attempt_status(self, question):
+        return (
+            AttemptStatusSerializer(instance).data
+            if (
+                instance := question.attempt_status.filter(
+                    user=self.context.get("request").user
+                ).last()
+            )
+            else None
+        )
+
+    def get_submission(self, question):
+        instance = question.submissions.filter(
+            user=self.context.get("request").user, success=True
+        ).last()
+        return SubmissionSerializer(instance).data if instance else None
+
+    def get_testcases(self, question):
+        request = self.context.get("request")
+        testcases = question.testcases.all()
+        testcase_serialized_data = TestCaseSerializer(
+            testcases, many=True, context=self.context.copy() | {"request": request}
+        ).data
+        if request and request.user == question.contest.organizer:
+            return testcase_serialized_data
+        else:
+            return (
+                testcase_serialized_data
+                if self.get_submission(question)
+                else testcases.count()
+            )
 
 
 class SubmissionSerializer(ModelSerializer):
